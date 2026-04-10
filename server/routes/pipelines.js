@@ -191,7 +191,8 @@ function withGithubToken(repoUrl, token) {
 function runCommand(command, args, cwd, onLine, options = {}) {
   const timeoutMs = options.timeoutMs ?? 15 * 60 * 1000;
   return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, { cwd, shell: true });
+    const env = { ...process.env, NODE_ENV: "development" };
+    const proc = spawn(command, args, { cwd, shell: true, env });
     let timedOut = false;
     const timeout = setTimeout(() => {
       timedOut = true;
