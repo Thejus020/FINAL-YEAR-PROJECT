@@ -191,8 +191,7 @@ function withGithubToken(repoUrl, token) {
 function runCommand(command, args, cwd, onLine, options = {}) {
   const timeoutMs = options.timeoutMs ?? 15 * 60 * 1000;
   return new Promise((resolve, reject) => {
-    const env = { ...process.env, NODE_ENV: "development" };
-    const proc = spawn(command, args, { cwd, shell: true, env });
+    const proc = spawn(command, args, { cwd, shell: true });
     let timedOut = false;
     const timeout = setTimeout(() => {
       timedOut = true;
@@ -415,7 +414,7 @@ async function runRealBuild(pipeline, build) {
       .then(() => true)
       .catch(() => false);
 
-    const installCommand = hasLockfile ? ["ci", "--no-audit", "--no-fund"] : ["install", "--no-audit", "--no-fund"];
+    const installCommand = hasLockfile ? ["ci", "--no-audit", "--no-fund", "--include=dev"] : ["install", "--no-audit", "--no-fund", "--include=dev"];
     await appendLog(build._id, `⬇️ Running: npm ${installCommand.join(" ")} (${projectLabel})`);
     await runCommand("npm", installCommand, projectDir, (line, level) => appendLog(build._id, line, level));
 
