@@ -5,6 +5,7 @@ services:
   - type: web
     name: infraflow-server
     env: node
+    plan: free # Forces the 100% Free Tier!
     rootDir: server
     buildCommand: npm install
     startCommand: node index.js
@@ -14,23 +15,23 @@ services:
       - key: PORT
         value: 5000
       - key: MONGO_URI
-        sync: false # You will paste your MongoDB URI in the Render Dashboard
+        sync: false
       - key: GITHUB_CLIENT_ID
-        sync: false # Paste from your GitHub OAuth App
+        sync: false
       - key: GITHUB_CLIENT_SECRET
-        sync: false # Paste from your GitHub OAuth App
+        sync: false
       - key: JWT_SECRET
-        sync: false # A random secret string
+        sync: false
       - key: SERVER_URL
-        value: https://infraflow-server.onrender.com # Change this if your assigned URL is different
+        value: https://infraflow-server.onrender.com
       - key: CLIENT_URL
-        value: https://infraflow-client.onrender.com # Change this if your assigned URL is different
+        value: https://infraflow-client.onrender.com
       - key: ALLOWED_ORIGINS
         value: https://infraflow-client.onrender.com
       - key: GITHUB_CALLBACK_URL
         value: https://infraflow-server.onrender.com/auth/github/callback
       - key: LOCAL_DEPLOY_ENABLED
-        value: false # PM2 does not work across Render instances for deploying user apps
+        value: false
 
   # ----------------------------------------
   # 2. Frontend App (React/Vite)
@@ -38,6 +39,7 @@ services:
   - type: web
     name: infraflow-client
     env: static
+    plan: free # Forces the 100% Free Tier!
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
