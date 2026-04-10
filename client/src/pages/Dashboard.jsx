@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Layout from "../components/Layout";
 import API from "../config";
 import { useAuth } from "../context/AuthContext";
 
@@ -17,6 +17,14 @@ export default function Dashboard() {
   const [pipelines, setPipelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionMenu, setActionMenu] = useState(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const closeMenu = (e) => { if (!e.target.closest('.action-menu-container')) setActionMenu(null); };
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, []);
 
   const fetchPipelines = async () => {
     try {
@@ -67,11 +75,9 @@ export default function Dashboard() {
   const failed = pipelines.filter((p) => p.status === "failed").length;
 
   return (
-    <div className="flex min-h-screen bg-gray-950 text-white">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+    <Layout>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
           <button
             onClick={() => navigate("/pipeline/new")}
             className="bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-sm font-medium transition"
@@ -83,12 +89,12 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total", value: total, color: "text-white" },
-            { label: "Running", value: running, color: "text-yellow-400" },
-            { label: "Success", value: success, color: "text-green-400" },
-            { label: "Failed", value: failed, color: "text-red-400" },
+            { label: "Total", value: total, color: "text-white", bg: "bg-gray-800/40" },
+            { label: "Running", value: running, color: "text-yellow-400", bg: "bg-yellow-900/10" },
+            { label: "Success", value: success, color: "text-green-400", bg: "bg-green-900/10" },
+            { label: "Failed", value: failed, color: "text-red-400", bg: "bg-red-900/10" },
           ].map((s) => (
-            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div key={s.label} className={`${s.bg} border border-gray-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-sm transition hover:border-gray-700/80`}>
               <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
               <div className="text-gray-500 text-sm mt-1">{s.label}</div>
             </div>
@@ -115,36 +121,57 @@ export default function Dashboard() {
             {pipelines.map((p) => (
               <div
                 key={p._id}
-                className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center gap-4 hover:border-gray-600 transition"
+                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-4 hover:bg-gray-800/30 transition shadow-sm"
               >
                 <div
-                  className="flex-1 cursor-pointer"
+                  className="flex-1 cursor-pointer min-w-0"
                   onClick={() => navigate(`/pipeline/${p._id}`)}
                 >
-                  <div className="font-semibold">{p.name}</div>
-                  <div className="text-gray-500 text-sm mt-0.5">{p.repo} · {p.branch}</div>
+                  <div className="font-semibold text-lg truncate flex items-center gap-2">
+                    {p.name}
+                    <span className={`text-xs px-2.5 py-0.5 rounded-md font-medium border ${statusColor[p.status].replace('text-', 'border-').replace('bg-', 'border-').replace('/20', '/40')} ${statusColor[p.status]}`}>
+                      {p.status}
+                    </span>
+                  </div>
+                  <div className="text-gray-500 text-sm mt-1 flex items-center gap-2 truncate">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    {p.repo} <span className="text-gray-600">·</span> <span className="text-violet-400">{p.branch}</span>
+                  </div>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColor[p.status]}`}>
-                  {p.status}
-                </span>
-                <button
-                  onClick={() => handleRun(p._id)}
-                  disabled={p.status === "running"}
-                  className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 px-3 py-1.5 rounded-lg text-sm transition"
-                >
-                  ▶ Run
-                </button>
-                <button
-                  onClick={() => handleDelete(p._id)}
-                  className="text-gray-600 hover:text-red-400 px-2 py-1.5 rounded-lg text-sm transition"
-                >
-                  ✕
-                </button>
+
+                <div className="flex items-center gap-3 self-end md:self-auto mt-2 md:mt-0">
+                  <button
+                    onClick={() => handleRun(p._id)}
+                    disabled={p.status === "running"}
+                    className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm"
+                  >
+                    ▶ Run
+                  </button>
+
+                  <div className="relative action-menu-container">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActionMenu(actionMenu === p._id ? null : p._id); }}
+                      className="p-2 text-gray-500 hover:text-white bg-gray-800/50 hover:bg-gray-700/80 rounded-xl transition"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                    </button>
+
+                    {actionMenu === p._id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl z-20 py-1 overflow-hidden backdrop-blur-xl">
+                        <button
+                          onClick={() => { handleDelete(p._id); setActionMenu(null); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
+                        >
+                          Delete Pipeline
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </Layout>
   );
 }

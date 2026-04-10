@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Layout from "../components/Layout";
 import API from "../config";
 import { useAuth } from "../context/AuthContext";
 
@@ -79,9 +79,8 @@ export default function BuildView() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-950 text-white">
-      <Sidebar />
-      <main className="flex-1 p-8 flex flex-col">
+    <Layout>
+      <div className="flex flex-col h-full max-w-6xl mx-auto w-full pb-8">
         <button
           onClick={() => navigate(-1)}
           className="text-gray-500 hover:text-white text-sm mb-6 transition w-fit"
@@ -90,31 +89,34 @@ export default function BuildView() {
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">
-              {build?.pipeline?.name || "Build"} — #{id.slice(-6)}
+        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold truncate bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              {build?.pipeline?.name || "Build"} <span className="text-gray-500">#{id.slice(-6)}</span>
             </h1>
-            <div className="text-gray-500 text-sm mt-0.5">
-              {build?.triggeredBy === "webhook" ? "🔗 Triggered by webhook" : "👤 Manually triggered"}
-              {build?.duration ? ` · ${formatDuration(build.duration)}` : ""}
+            <div className="text-gray-500 text-sm mt-1 whitespace-normal md:truncate">
+              <span className="font-medium bg-gray-900 px-2 py-0.5 rounded-md">{build?.triggeredBy === "webhook" ? "🔗 Webhook" : "👤 Manual"}</span>
+              {build?.duration ? <span className="ml-2 font-mono text-xs border-l border-gray-700 pl-2">{formatDuration(build.duration)}</span> : ""}
             </div>
           </div>
-          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusBadge[status]}`}>
-            {status}
-          </span>
-          {streaming && (
-            <span className="flex items-center gap-1.5 text-xs text-violet-400">
-              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
-              streaming
+          
+          <div className="flex items-center gap-4 self-start md:self-auto">
+            <span className={`text-xs px-3 py-1.5 rounded-md font-medium border ${statusBadge[status].replace('text-', 'border-').replace('bg-', 'border-').replace('/20', '/40')} ${statusBadge[status]}`}>
+              {status}
             </span>
-          )}
+            {streaming && (
+              <span className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-900/10 border border-violet-900/30 px-3 py-1.5 rounded-md">
+                <span className="w-2 h-2 bg-violet-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+                streaming
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Terminal window */}
-        <div className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-[50vh] bg-[#0d1117] border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
           {/* macOS-style chrome */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-gray-800/60 border-b border-gray-700/50">
+          <div className="flex items-center gap-2 px-4 py-3 bg-[#161b22] border-b border-gray-800">
             <span className="w-3 h-3 bg-red-500 rounded-full" />
             <span className="w-3 h-3 bg-yellow-500 rounded-full" />
             <span className="w-3 h-3 bg-green-500 rounded-full" />
@@ -122,21 +124,21 @@ export default function BuildView() {
           </div>
 
           {/* Logs */}
-          <div className="flex-1 overflow-y-auto p-5 font-mono text-sm space-y-1 max-h-[60vh]">
+          <div className="flex-1 overflow-auto p-4 md:p-6 font-mono text-xs md:text-sm space-y-1.5">
             {logs.length === 0 && (
-              <span className="text-gray-600">Waiting for build to start...</span>
+              <span className="text-gray-600 italic">Waiting for build to start...</span>
             )}
             {logs.map((log, i) => (
-              <div key={i} className={`flex gap-3 ${levelColor[log.level] || "text-gray-300"}`}>
-                <span className="text-gray-600 select-none w-20 shrink-0 text-xs pt-0.5">
-                  {new Date(log.timestamp).toLocaleTimeString()}
+              <div key={i} className={`flex gap-3 hover:bg-gray-800/30 rounded px-1 -mx-1 ${levelColor[log.level] || "text-gray-300"}`}>
+                <span className="text-gray-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60">
+                  {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
                 </span>
-                <span className="break-all">{log.message}</span>
+                <span className="break-words whitespace-pre-wrap flex-1">{log.message}</span>
               </div>
             ))}
             {streaming && (
               <div className="flex gap-3 text-gray-500">
-                <span className="text-gray-700 w-20 shrink-0 text-xs" />
+                <span className="w-16 md:w-20 shrink-0" />
                 <span className="animate-pulse">█</span>
               </div>
             )}
@@ -147,18 +149,18 @@ export default function BuildView() {
         {/* Status footer */}
         {!streaming && (
           <div
-            className={`mt-4 rounded-xl px-5 py-3 text-sm font-medium ${
+            className={`mt-6 rounded-2xl px-6 py-4 text-sm font-medium border backdrop-blur-sm shadow-sm ${
               status === "success"
-                ? "bg-green-900/30 border border-green-700/30 text-green-300"
-                : "bg-red-900/30 border border-red-700/30 text-red-300"
+                ? "bg-green-900/20 border-green-700/30 text-green-400"
+                : "bg-red-900/20 border-red-700/30 text-red-400"
             }`}
           >
             {status === "success"
               ? "✅ Build completed successfully"
-              : "❌ Build failed — check the logs above"}
+              : "❌ Build failed — check the terminal logs above"}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }

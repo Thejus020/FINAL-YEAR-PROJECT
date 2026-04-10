@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Layout from "../components/Layout";
 import API, { WEBHOOK_BASE_URL } from "../config";
 import { useAuth } from "../context/AuthContext";
 
@@ -86,40 +86,38 @@ export default function PipelineDetail() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gray-950 text-white">
-        <Sidebar />
-        <main className="flex-1 p-8 text-gray-500">Loading...</main>
-      </div>
+      <Layout>
+        <div className="flex-1 text-gray-500 flex items-center justify-center">Loading...</div>
+      </Layout>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-950 text-white">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <button onClick={() => navigate("/dashboard")} className="text-gray-500 hover:text-white text-sm mb-6 transition">
+    <Layout>
+        <button onClick={() => navigate("/dashboard")} className="text-gray-500 hover:text-white text-sm mb-6 transition w-fit">
           ← Dashboard
         </button>
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-2xl font-bold mb-1">{pipeline?.name}</h1>
-            <div className="text-gray-500 text-sm">
-              {pipeline?.repo} · <span className="text-violet-400">{pipeline?.branch}</span>
+            <h1 className="text-3xl font-bold mb-1 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{pipeline?.name}</h1>
+            <div className="text-gray-500 text-sm flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              {pipeline?.repo} · <span className="text-violet-400 font-medium">{pipeline?.branch}</span>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full md:w-auto">
             <button
               onClick={handleRun}
               disabled={running || pipeline?.status === "running"}
-              className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 px-4 py-2 rounded-lg text-sm font-medium transition"
+              className="flex-1 md:flex-none bg-violet-600 hover:bg-violet-700 disabled:opacity-40 px-5 py-2.5 rounded-xl text-sm font-medium transition shadow-sm"
             >
               {running ? "Starting..." : "▶ Run now"}
             </button>
             <button
               onClick={handleDelete}
-              className="border border-gray-700 hover:border-red-500 text-gray-400 hover:text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition"
+              className="flex-1 md:flex-none border border-gray-700/80 hover:bg-red-500/10 hover:border-red-500/50 text-gray-400 hover:text-red-400 px-5 py-2.5 rounded-xl text-sm font-medium transition"
             >
               Delete
             </button>
@@ -127,7 +125,7 @@ export default function PipelineDetail() {
         </div>
 
         {/* Webhook card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-8">
+        <div className="bg-gray-900/40 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 mb-8 shadow-sm">
           <h2 className="font-semibold mb-1 text-sm text-gray-400 uppercase tracking-wider">GitHub Webhook</h2>
           {webhookBaseIsLocalhost && (
             <p className="text-amber-400 text-xs mb-3">
@@ -139,60 +137,65 @@ export default function PipelineDetail() {
             Add this URL in your repo → Settings → Webhooks → Payload URL. Set content type to{" "}
             <code className="text-violet-300">application/json</code> and paste the secret below into GitHub Webhook Secret.
           </p>
-          <div className="flex gap-2">
-            <code className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm text-green-300 truncate">
+          <div className="flex flex-col md:flex-row gap-2">
+            <code className="flex-1 bg-gray-950 border border-gray-800/80 rounded-xl px-4 py-3 text-sm text-green-300 break-all">
               {webhookUrl}
             </code>
             <button
               onClick={copyWebhook}
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-xs transition"
+              className="md:w-32 bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded-xl font-medium text-xs transition"
             >
-              {copied ? "✓ Copied" : "Copy"}
+              {copied ? "✓ Copied" : "Copy URL"}
             </button>
           </div>
-          <div className="flex gap-2 mt-3">
-            <code className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm text-violet-300 truncate">
+          <div className="flex flex-col md:flex-row gap-2 mt-3">
+            <code className="flex-1 bg-gray-950 border border-gray-800/80 rounded-xl px-4 py-3 text-sm text-violet-300 break-all opacity-80 blur-[2px] hover:blur-none transition-all duration-300 cursor-pointer">
               {pipeline?.webhookSecret || "No webhook secret available"}
             </code>
             <button
               onClick={copyWebhookSecret}
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-xs transition"
+              className="md:w-32 bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded-xl font-medium text-xs transition"
             >
-              {copiedSecret ? "✓ Copied" : "Copy secret"}
+              {copiedSecret ? "✓ Copied" : "Copy Secret"}
             </button>
           </div>
         </div>
 
         {/* Build history */}
-        <h2 className="font-semibold mb-4">Build History</h2>
+        <h2 className="text-lg font-bold mb-4">Build History</h2>
         {builds.length === 0 ? (
-          <div className="text-gray-600 text-sm">No builds yet. Hit Run to start your first build.</div>
+          <div className="text-gray-500 bg-gray-900/30 border border-gray-800/50 border-dashed rounded-2xl p-8 text-center text-sm">
+            No builds yet. Hit Run to start your first build.
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {builds.map((b, i) => (
               <div
                 key={b._id}
                 onClick={() => navigate(`/build/${b._id}`)}
-                className="bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl px-5 py-4 flex items-center gap-4 cursor-pointer transition"
+                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/80 hover:bg-gray-800/40 rounded-2xl px-6 py-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 cursor-pointer transition shadow-sm"
               >
-                <div className="text-gray-600 text-sm w-6">#{builds.length - i}</div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium">
+                <div className="text-gray-500 font-mono text-sm w-8 shrink-0">#{builds.length - i}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
                     Triggered by{" "}
-                    <span className="text-violet-400">{b.triggeredBy}</span>
+                    <span className="text-violet-400 bg-violet-900/20 px-2 py-0.5 rounded-md ml-1">{b.triggeredBy}</span>
                   </div>
-                  <div className="text-gray-600 text-xs mt-0.5">
+                  <div className="text-gray-500 text-xs mt-1.5 flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     {new Date(b.createdAt).toLocaleString()}
                   </div>
                 </div>
-                <span className={`text-sm font-semibold ${statusColor[b.status]}`}>{b.status}</span>
-                <span className="text-gray-600 text-xs">{formatDuration(b.duration)}</span>
-                <span className="text-gray-600">›</span>
+                
+                <div className="flex items-center justify-between md:justify-end gap-6 mt-3 md:mt-0 pt-3 md:pt-0 border-t border-gray-800/80 md:border-t-0">
+                  <span className={`text-sm px-3 py-1 rounded-full font-semibold bg-gray-950/50 border border-gray-800/80 ${statusColor[b.status]}`}>{b.status}</span>
+                  <span className="text-gray-500 text-sm font-mono w-16 text-right">{formatDuration(b.duration)}</span>
+                  <span className="text-gray-600 hidden md:block">›</span>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </Layout>
   );
 }
