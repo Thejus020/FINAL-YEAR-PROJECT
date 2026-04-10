@@ -307,54 +307,47 @@ async function detectNodeProject(workDir) {
   return projects[0];
 }
 
-async function deployLocallyIfEnabled({ pipeline, buildId, packageJson, workDir, projectRelPath = "" }) {
-  const enabledValue = String(process.env.LOCAL_DEPLOY_ENABLED ?? "true").trim().toLowerCase();
-  const enabled = !["false", "0", "no", "off"].includes(enabledValue);
-  if (!enabled) {
+async function deployToCloud({ pipeline, buildId, packageJson, workDir, projectRelPath = "" }) {
+  const surgeToken = process.env.SURGE_TOKEN;
+  
+  if (!surgeToken) {
     await appendLog(
       buildId,
-      `ℹ️ Local deployment stage skipped (LOCAL_DEPLOY_ENABLED='${process.env.LOCAL_DEPLOY_ENABLED ?? "undefined"}')`
+      "ℹ️ Cloud deployment skipped: No SURGE_TOKEN found in environment variables."
     );
     return;
   }
 
-  const deployRoot = path.join(os.homedir(), "infraflow-deployments");
-  const deployDir = path.join(deployRoot, String(pipeline._id));
-  const deployProjectDir = path.join(deployDir, projectRelPath);
-  const appName = `infraflow-${String(pipeline._id).slice(-8)}`;
   const distDir = path.join(workDir, projectRelPath, "dist");
-  const distExists = await pathExists(distDir);
+  const buildDir = path.join(workDir, projectRelPath, "build");
+  let deployPath = "";
+  
+  if (await pathExists(distDir)) deployPath = distDir;
+  else if (await pathExists(buildDir)) deployPath = buildDir;
 
-  await fs.mkdir(deployRoot, { recursive: true });
-  await fs.rm(deployDir, { recursive: true, force: true });
-  await fs.cp(workDir, deployDir, { recursive: true });
-  await appendLog(buildId, `📁 Prepared deployment directory: ${deployDir}`);
-
-  const runPm2 = async (args) =>
-    runCommand("pm2", args, deployProjectDir, (line, level) => appendLog(buildId, line, level), { timeoutMs: 120000 });
-
-  await runPm2(["delete", appName]).catch(() => {});
-
-  if (distExists) {
-    const port = computeDeterministicPort(pipeline._id, Number(process.env.LOCAL_DEPLOY_PORT_BASE || 4300), 300);
-    await appendLog(buildId, `🚀 Deploying static app with PM2 serve on port ${port}`);
-    await runPm2(["serve", "dist", String(port), "--name", appName, "--spa"]);
-    await appendLog(buildId, `🌐 Local deployment URL: http://localhost:${port}`, "success");
+  if (!deployPath) {
+    await appendLog(
+      buildId,
+      "⚠️ Cloud deployment skipped: No 'dist' or 'build' directory found. Surge requires static assets.",
+      "warn"
+    );
     return;
   }
 
-  if (packageJson?.scripts?.start) {
-    await appendLog(buildId, "🚀 Deploying Node app with PM2 (npm start)");
-    await runPm2(["start", "npm", "--name", appName, "--", "start"]);
-    await appendLog(buildId, `🌐 PM2 app started: ${appName} (check 'pm2 logs ${appName}')`, "success");
-    return;
+  const domain = `infraflow-${String(pipeline._id).slice(-8)}.surge.sh`;
+  
+  await appendLog(buildId, `🚀 Deploying static assets to cloud via Surge...`);
+  
+  try {
+    await runCommand("npx", ["surge", deployPath, domain, "--token", surgeToken], workDir, (line, level) => {
+      const safeLine = line.replace(new RegExp(surgeToken, 'g'), "***");
+      appendLog(buildId, safeLine, level);
+    });
+    
+    await appendLog(buildId, `🌐 Successfully deployed to public URL: https://${domain}`, "success");
+  } catch (err) {
+    throw new Error(`Surge deployment failed: ${err.message}`);
   }
-
-  await appendLog(
-    buildId,
-    "⚠️ Deployment skipped: no 'dist' directory and no 'start' script found. Build still counted as successful.",
-    "warn"
-  );
 }
 
 // ── Real build runner: clone + install + build ────────────────────────────────
@@ -426,7 +419,7 @@ async function runRealBuild(pipeline, build) {
       await appendLog(build._id, "⚠️ No build script found in package.json, skipping build step", "warn");
     }
 
-    await deployLocallyIfEnabled({
+    await deployToCloud({
       pipeline,
       buildId: build._id,
       packageJson,
