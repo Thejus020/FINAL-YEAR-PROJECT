@@ -39,7 +39,6 @@ services:
   - type: web
     name: infraflow-client
     env: static
-    plan: free # Forces the 100% Free Tier!
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
