@@ -99,13 +99,18 @@ export default function Dashboard() {
         ) : error ? (
           <div className="text-red-400 mt-12 text-center">{error}</div>
         ) : pipelines.length === 0 ? (
-          <div className="text-center mt-20 text-gray-500">
-            <p className="text-lg mb-4">No pipelines yet.</p>
+          <div className="flex flex-col items-center justify-center text-gray-500 bg-gray-900/10 border border-gray-800/40 border-dashed rounded-2xl p-12 text-center shadow-inner mt-8">
+            <div className="w-16 h-16 mb-5 rounded-full bg-gray-900 flex items-center justify-center border border-gray-800/60 shadow-sm">
+              <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>
+            </div>
+            <h3 className="text-gray-300 font-medium text-lg mb-2">No pipelines found</h3>
+            <p className="text-sm max-w-sm mb-6">You haven't connected any repositories yet. Create a pipeline to automate your deployments.</p>
             <button
               onClick={() => navigate("/pipeline/new")}
-              className="bg-violet-600 hover:bg-violet-700 px-6 py-3 rounded-lg font-medium transition"
+              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl font-medium transition shadow-sm"
             >
-              Create your first pipeline →
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              Create Pipeline
             </button>
           </div>
         ) : (

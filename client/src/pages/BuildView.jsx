@@ -81,11 +81,14 @@ export default function BuildView() {
   return (
     <Layout>
       <div className="flex flex-col h-full max-w-6xl mx-auto w-full pb-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-500 hover:text-white text-sm mb-6 transition w-fit"
+        <button 
+          onClick={() => navigate(-1)} 
+          className="group flex items-center gap-2.5 text-gray-400 hover:text-white text-sm font-medium mb-6 md:mb-8 transition-colors w-fit"
         >
-          ← Back
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/50 border border-gray-800/80 group-hover:bg-gray-800 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+          </div>
+          Back
         </button>
 
         {/* Header */}
@@ -95,7 +98,13 @@ export default function BuildView() {
               {build?.pipeline?.name || "Build"} <span className="text-gray-500">#{id.slice(-6)}</span>
             </h1>
             <div className="text-gray-500 text-sm mt-1 whitespace-normal md:truncate">
-              <span className="font-medium bg-gray-900 px-2 py-0.5 rounded-md">{build?.triggeredBy === "webhook" ? "🔗 Webhook" : "👤 Manual"}</span>
+              <span className="inline-flex items-center font-medium bg-gray-900 border border-gray-800 px-2 py-0.5 rounded-md shadow-sm">
+                {build?.triggeredBy === "webhook" ? (
+                  <><svg className="w-3.5 h-3.5 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>Webhook</>
+                ) : (
+                  <><svg className="w-3.5 h-3.5 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>Manual</>
+                )}
+              </span>
               {build?.duration ? <span className="ml-2 font-mono text-xs border-l border-gray-700 pl-2">{formatDuration(build.duration)}</span> : ""}
             </div>
           </div>
@@ -155,9 +164,11 @@ export default function BuildView() {
                 : "bg-red-900/20 border-red-700/30 text-red-400"
             }`}
           >
-            {status === "success"
-              ? "✅ Build completed successfully"
-              : "❌ Build failed — check the terminal logs above"}
+            {status === "success" ? (
+              <span className="flex items-center"><svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Build completed successfully</span>
+            ) : (
+              <span className="flex items-center"><svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Build failed — check the terminal logs above</span>
+            )}
           </div>
         )}
       </div>

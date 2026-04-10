@@ -94,8 +94,14 @@ export default function PipelineDetail() {
 
   return (
     <Layout>
-        <button onClick={() => navigate("/dashboard")} className="text-gray-500 hover:text-white text-sm mb-6 transition w-fit">
-          ← Dashboard
+        <button 
+          onClick={() => navigate("/dashboard")} 
+          className="group flex items-center gap-2.5 text-gray-400 hover:text-white text-sm font-medium mb-6 md:mb-8 transition-colors w-fit"
+        >
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/50 border border-gray-800/80 group-hover:bg-gray-800 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+          </div>
+          Dashboard
         </button>
 
         {/* Header */}
@@ -164,8 +170,12 @@ export default function PipelineDetail() {
         {/* Build history */}
         <h2 className="text-lg font-bold mb-4">Build History</h2>
         {builds.length === 0 ? (
-          <div className="text-gray-500 bg-gray-900/30 border border-gray-800/50 border-dashed rounded-2xl p-8 text-center text-sm">
-            No builds yet. Hit Run to start your first build.
+          <div className="flex flex-col items-center justify-center text-gray-500 bg-gray-900/10 border border-gray-800/40 border-dashed rounded-2xl p-12 text-center shadow-inner">
+            <div className="w-16 h-16 mb-4 rounded-full bg-gray-900 flex items-center justify-center border border-gray-800/60 shadow-sm">
+              <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>
+            </div>
+            <h3 className="text-gray-300 font-medium text-base mb-1">No builds yet</h3>
+            <p className="text-sm max-w-sm">Hit Run to trigger your first deployment pipeline.</p>
           </div>
         ) : (
           <div className="space-y-3">
