@@ -39,8 +39,9 @@ router.post("/", auth, async (req, res) => {
     // Auto-create GitHub webhook if possible
     const user = await User.findById(req.user._id);
     if (user?.accessToken && repo.includes("github.com")) {
+      const serverUrl = process.env.SERVER_URL || `${req.protocol}://${req.get("host")}`;
       // Run async in background
-      createGithubWebhook(user.accessToken, pipeline._id, repo, pipeline.webhookSecret);
+      createGithubWebhook(user.accessToken, pipeline._id, repo, pipeline.webhookSecret, serverUrl);
     }
 
     res.status(201).json(pipeline);
@@ -172,7 +173,7 @@ function isValidGithubSignature(rawBody, signatureHeader, secret) {
   return crypto.timingSafeEqual(expectedBuf, actualBuf);
 }
 
-async function createGithubWebhook(userToken, pipelineId, repoUrl, secret) {
+async function createGithubWebhook(userToken, pipelineId, repoUrl, secret, serverUrl) {
   try {
     const normalized = normalizeRepoToHttps(repoUrl);
     // Extract owner and repo from https://github.com/owner/repo(.git)
@@ -181,8 +182,7 @@ async function createGithubWebhook(userToken, pipelineId, repoUrl, secret) {
 
     const owner = match[1];
     const repo = match[2];
-    const serverUrl = process.env.SERVER_URL || "http://localhost:5000";
-    const webhookUrl = `${serverUrl}/pipelines/${pipelineId}/webhook`;
+    const webhookUrl = `${serverUrl.replace(/\/$/, "")}/pipelines/${pipelineId}/webhook`;
 
     await axios.post(
       `https://api.github.com/repos/${owner}/${repo}/hooks`,

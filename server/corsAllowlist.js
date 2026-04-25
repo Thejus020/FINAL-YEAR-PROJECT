@@ -1,10 +1,19 @@
 /** Public UI origins allowed for CORS + SSE. Use ALLOWED_ORIGINS=a,b for tunnel + localhost. */
 function origins() {
-  const raw = process.env.ALLOWED_ORIGINS;
-  if (raw && raw.trim()) {
-    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const list = [];
+  
+  if (process.env.CLIENT_URL) list.push(process.env.CLIENT_URL.trim());
+  if (process.env.ALLOWED_ORIGINS) {
+    const raw = process.env.ALLOWED_ORIGINS.split(",");
+    raw.forEach(o => list.push(o.trim()));
   }
-  return [(process.env.CLIENT_URL || "http://localhost:5173").trim()];
+
+  // Always allow localhost in development, but keep list clean
+  if (process.env.NODE_ENV !== "production") {
+    if (!list.includes("http://localhost:5173")) list.push("http://localhost:5173");
+  }
+
+  return [...new Set(list)].filter(Boolean);
 }
 
 function corsOriginCallback(origin, callback) {

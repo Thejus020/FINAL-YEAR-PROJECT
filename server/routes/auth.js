@@ -49,8 +49,14 @@ router.get(
       expiresIn: "7d",
     });
     const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
-    // Redirect to frontend with token in URL hash (grabbed by frontend)
-    res.redirect(`${clientURL}/auth/callback?token=${token}`);
+    
+    if (!process.env.CLIENT_URL) {
+      console.warn("⚠️ CLIENT_URL env var is missing, redirecting to:", clientURL);
+    }
+
+    // Ensure no trailing slash for consistency
+    const cleanClientURL = clientURL.replace(/\/$/, "");
+    res.redirect(`${cleanClientURL}/auth/callback?token=${token}`);
   }
 );
 
