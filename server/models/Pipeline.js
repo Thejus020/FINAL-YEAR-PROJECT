@@ -13,6 +13,12 @@ const pipelineSchema = new mongoose.Schema(
     },
     lastBuildAt: { type: Date, default: null },
     webhookSecret: { type: String, default: () => Math.random().toString(36).slice(2) },
+    envVars: [
+      {
+        key: { type: String, trim: true },
+        value: { type: String, trim: true },
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -26,7 +26,7 @@ router.get("/", auth, async (req, res) => {
 // ── POST create a new pipeline ────────────────────────────────────────────────
 router.post("/", auth, async (req, res) => {
   try {
-    const { name, repo, branch } = req.body;
+    const { name, repo, branch, envVars } = req.body;
     if (!name || !repo) return res.status(400).json({ error: "name and repo are required" });
 
     const pipeline = await Pipeline.create({
@@ -34,6 +34,7 @@ router.post("/", auth, async (req, res) => {
       repo,
       branch: branch || "main",
       owner: req.user._id,
+      envVars: envVars || [],
     });
 
     // Auto-create GitHub webhook if possible
@@ -238,7 +239,11 @@ function withGithubToken(repoUrl, token) {
 function runCommand(command, args, cwd, onLine, options = {}) {
   const timeoutMs = options.timeoutMs ?? 15 * 60 * 1000;
   return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, { cwd, shell: true });
+    const proc = spawn(command, args, {
+      cwd,
+      shell: true,
+      env: { ...process.env, ...options.env },
+    });
     let timedOut = false;
     const timeout = setTimeout(() => {
       timedOut = true;
@@ -273,7 +278,11 @@ function runCommand(command, args, cwd, onLine, options = {}) {
 function runCommandCapture(command, args, cwd, options = {}) {
   const timeoutMs = options.timeoutMs ?? 30 * 1000;
   return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, { cwd, shell: true });
+    const proc = spawn(command, args, {
+      cwd,
+      shell: true,
+      env: { ...process.env, ...options.env },
+    });
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -448,6 +457,17 @@ async function runRealBuild(pipeline, build) {
     const projectDir = detectedProject.dir;
     const projectLabel = detectedProject.relPath || "root";
     await appendLog(build._id, `📁 Node project detected at: ${projectLabel}`);
+    
+    // Prepare pipeline environment variables
+    const pipelineEnv = {};
+    if (pipeline.envVars && pipeline.envVars.length > 0) {
+      pipeline.envVars.forEach((ev) => {
+        if (ev.key && ev.value) {
+          pipelineEnv[ev.key.trim()] = ev.value.trim();
+        }
+      });
+      await appendLog(build._id, `🔐 Injected ${pipeline.envVars.length} environment variables`);
+    }
 
     const hasLockfile = await fs
       .access(path.join(projectDir, "package-lock.json"))
@@ -456,11 +476,11 @@ async function runRealBuild(pipeline, build) {
 
     const installCommand = hasLockfile ? ["ci", "--no-audit", "--no-fund", "--include=dev"] : ["install", "--no-audit", "--no-fund", "--include=dev"];
     await appendLog(build._id, `⬇️ Running: npm ${installCommand.join(" ")} (${projectLabel})`);
-    await runCommand("npm", installCommand, projectDir, (line, level) => appendLog(build._id, line, level));
+    await runCommand("npm", installCommand, projectDir, (line, level) => appendLog(build._id, line, level), { env: pipelineEnv });
 
     if (packageJson.scripts?.build) {
       await appendLog(build._id, `🔨 Running: npm run build (${projectLabel})`);
-      await runCommand("npm", ["run", "build"], projectDir, (line, level) => appendLog(build._id, line, level));
+      await runCommand("npm", ["run", "build"], projectDir, (line, level) => appendLog(build._id, line, level), { env: pipelineEnv });
       await appendLog(build._id, "✅ Build completed", "success");
     } else {
       await appendLog(build._id, "⚠️ No build script found in package.json, skipping build step", "warn");

@@ -167,6 +167,21 @@ export default function PipelineDetail() {
           </div>
         </div>
 
+        {/* Environment Variables card */}
+        {pipeline?.envVars && pipeline.envVars.length > 0 && (
+          <div className="bg-gray-900/40 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 mb-8 shadow-sm">
+            <h2 className="font-semibold mb-3 text-sm text-gray-400 uppercase tracking-wider">Environment Variables</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {pipeline.envVars.map((ev, idx) => (
+                <div key={idx} className="flex flex-col bg-gray-950 border border-gray-800/80 rounded-xl px-4 py-2">
+                  <span className="text-[10px] font-bold text-violet-400 uppercase tracking-tighter">{ev.key}</span>
+                  <span className="text-sm text-gray-300 font-mono truncate">{ev.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Build history */}
         <h2 className="text-lg font-bold mb-4">Build History</h2>
         {builds.length === 0 ? (
