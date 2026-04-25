@@ -344,63 +344,114 @@ async function readJsonIfExists(filePath) {
   }
 }
 
-async function detectNodeProject(workDir) {
-  const candidates = ["", "client", "frontend", "web", "app"];
+async function detectFullStackProjects(workDir) {
+  const candidates = ["", "client", "frontend", "web", "app", "server", "backend", "api"];
   const projects = [];
 
   for (const rel of candidates) {
     const dir = path.join(workDir, rel);
     const pkg = await readJsonIfExists(path.join(dir, "package.json"));
     if (pkg) {
-      projects.push({ relPath: rel, dir, packageJson: pkg });
+      // Logic to determine type:
+      const hasBuild = !!pkg.scripts?.build;
+      const isNamedBackend = rel.match(/server|backend|api/i);
+      const isNamedFrontend = rel.match(/client|frontend|web|app/i);
+
+      let type = "backend";
+      if (isNamedFrontend || (hasBuild && !isNamedBackend)) {
+        type = "frontend";
+      }
+
+      projects.push({ relPath: rel, dir, packageJson: pkg, type });
     }
   }
 
   if (projects.length === 0) return null;
-
-  const buildProject = projects.find((p) => p.packageJson?.scripts?.build);
-  if (buildProject) return buildProject;
-  return projects[0];
+  return projects;
 }
 
-async function deployToCloud({ pipeline, buildId, packageJson, workDir, projectRelPath = "" }) {
-  const surgeToken = process.env.SURGE_TOKEN;
-  
-  if (!surgeToken) {
-    await appendLog(
-      buildId,
-      "ℹ️ Cloud deployment skipped: No SURGE_TOKEN found in environment variables."
-    );
-    return;
+async function deployToRender({ pipeline, buildId, project, envVars }) {
+  const apiKey = process.env.RENDER_API_KEY;
+  const ownerId = process.env.RENDER_OWNER_ID;
+
+  if (!apiKey || !ownerId) {
+    await appendLog(buildId, "ℹ️ Render deployment skipped: RENDER_API_KEY or RENDER_OWNER_ID missing.", "warn");
+    return null;
   }
 
-  const distDir = path.join(workDir, projectRelPath, "dist");
-  const buildDir = path.join(workDir, projectRelPath, "build");
+  await appendLog(buildId, `🚀 Orchestrating backend deployment to Render...`);
+
+  try {
+    const api = axios.create({
+      baseURL: "https://api.render.com/v1",
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+    });
+
+    let serviceId = pipeline.renderServiceId;
+    let isNew = false;
+
+    if (!serviceId) {
+      // Create new service
+      await appendLog(buildId, `✨ Creating new Render Web Service: ${pipeline.name}-backend`);
+      const res = await api.post("/services", {
+        type: "web_service",
+        name: `${pipeline.name}-backend`.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+        ownerId,
+        repo: normalizeRepoToHttps(pipeline.repo),
+        serviceDetails: {
+          runtime: "node",
+          buildCommand: "npm install",
+          startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
+          envVars: Object.entries(envVars).map(([key, value]) => ({ key, value })),
+        },
+      });
+      serviceId = res.data.id;
+      isNew = true;
+      await Pipeline.findByIdAndUpdate(pipeline._id, { renderServiceId: serviceId });
+    } else {
+      // Trigger new deploy
+      await appendLog(buildId, `🔄 Triggering existing Render service deployment (${serviceId})`);
+      await api.post(`/services/${serviceId}/deploys`);
+    }
+
+    // Get the URL
+    const serviceRes = await api.get(`/services/${serviceId}`);
+    const url = serviceRes.data.serviceDetails.url;
+    await appendLog(buildId, `🌐 Backend is live at: ${url}`, "success");
+    return url;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(`Render deployment failed: ${msg}`);
+  }
+}
+
+async function deployToSurge({ pipeline, buildId, workDir, project }) {
+  const surgeToken = process.env.SURGE_TOKEN;
+  if (!surgeToken) {
+    await appendLog(buildId, "ℹ️ Surge deployment skipped: No SURGE_TOKEN found.", "warn");
+    return null;
+  }
+
+  const distDir = path.join(project.dir, "dist");
+  const buildDir = path.join(project.dir, "build");
   let deployPath = "";
-  
   if (await pathExists(distDir)) deployPath = distDir;
   else if (await pathExists(buildDir)) deployPath = buildDir;
 
   if (!deployPath) {
-    await appendLog(
-      buildId,
-      "⚠️ Cloud deployment skipped: No 'dist' or 'build' directory found. Surge requires static assets.",
-      "warn"
-    );
-    return;
+    await appendLog(buildId, "⚠️ Surge deployment skipped: No 'dist' or 'build' directory found.", "warn");
+    return null;
   }
 
   const domain = `infraflow-${String(pipeline._id).slice(-8)}.surge.sh`;
-  
-  await appendLog(buildId, `🚀 Deploying static assets to cloud via Surge...`);
-  
+  await appendLog(buildId, `🚀 Deploying static assets to Surge: https://${domain}`);
+
   try {
-    await runCommand("npx", ["surge", deployPath, domain, "--token", surgeToken], workDir, (line, level) => {
-      const safeLine = line.replace(new RegExp(surgeToken, 'g'), "***");
-      appendLog(buildId, safeLine, level);
+    await runCommand("npx", ["surge", deployPath, domain, "--token", surgeToken], workDir, (line) => {
+      const safeLine = line.replace(new RegExp(surgeToken, "g"), "***");
+      appendLog(buildId, safeLine);
     });
-    
-    await appendLog(buildId, `🌐 Successfully deployed to public URL: https://${domain}`, "success");
+    return `https://${domain}`;
   } catch (err) {
     throw new Error(`Surge deployment failed: ${err.message}`);
   }
@@ -413,7 +464,7 @@ async function runRealBuild(pipeline, build) {
 
   try {
     await fs.mkdir(workRoot, { recursive: true });
-    await appendLog(build._id, `🔗 Starting real pipeline for ${pipeline.repo} (${pipeline.branch})`);
+    await appendLog(build._id, `🔗 Starting full-stack pipeline for ${pipeline.repo} (${pipeline.branch})`);
 
     const owner = await User.findById(pipeline.owner).select("accessToken");
     const normalizedRepo = normalizeRepoToHttps(pipeline.repo);
@@ -447,58 +498,52 @@ async function runRealBuild(pipeline, build) {
     }
     await appendLog(build._id, "✅ Clone complete", "success");
 
-    const detectedProject = await detectNodeProject(workDir);
-    if (!detectedProject) {
-      throw new Error(
-        "No package.json found in root or common app folders (client/frontend/web/app)."
-      );
-    }
-    const packageJson = detectedProject.packageJson;
-    const projectDir = detectedProject.dir;
-    const projectLabel = detectedProject.relPath || "root";
-    await appendLog(build._id, `📁 Node project detected at: ${projectLabel}`);
-    
-    // Prepare pipeline environment variables
-    const pipelineEnv = {};
-    if (pipeline.envVars && pipeline.envVars.length > 0) {
-      pipeline.envVars.forEach((ev) => {
-        if (ev.key && ev.value) {
-          pipelineEnv[ev.key.trim()] = ev.value.trim();
-        }
-      });
-      await appendLog(build._id, `🔐 Injected ${pipeline.envVars.length} environment variables`);
+    const projects = await detectFullStackProjects(workDir);
+    if (!projects || projects.length === 0) {
+      throw new Error("No Node.js projects detected in the repository.");
     }
 
-    const hasLockfile = await fs
-      .access(path.join(projectDir, "package-lock.json"))
-      .then(() => true)
-      .catch(() => false);
+    const backend = projects.find((p) => p.type === "backend");
+    const frontend = projects.find((p) => p.type === "frontend") || projects.find((p) => p.packageJson.scripts?.build);
 
-    const installCommand = hasLockfile ? ["ci", "--no-audit", "--no-fund", "--include=dev"] : ["install", "--no-audit", "--no-fund", "--include=dev"];
-    await appendLog(build._id, `⬇️ Running: npm ${installCommand.join(" ")} (${projectLabel})`);
-    await runCommand("npm", installCommand, projectDir, (line, level) => appendLog(build._id, line, level), { env: pipelineEnv });
+    // Prepare Base Env
+    const baseEnv = {};
+    pipeline.envVars.forEach((ev) => { if (ev.key) baseEnv[ev.key] = ev.value; });
 
-    if (packageJson.scripts?.build) {
-      await appendLog(build._id, `🔨 Running: npm run build (${projectLabel})`);
-      await runCommand("npm", ["run", "build"], projectDir, (line, level) => appendLog(build._id, line, level), { env: pipelineEnv });
-      await appendLog(build._id, "✅ Build completed", "success");
-    } else {
-      await appendLog(build._id, "⚠️ No build script found in package.json, skipping build step", "warn");
+    const finalUrls = [];
+
+    // 1. Deploy Backend First
+    let backendUrl = null;
+    if (backend) {
+      await appendLog(build._id, `📦 Found backend in: /${backend.relPath || "root"}`);
+      backendUrl = await deployToRender({ pipeline, buildId: build._id, project: backend, envVars: baseEnv });
+      if (backendUrl) finalUrls.push({ label: "Backend API", url: backendUrl });
     }
 
-    await deployToCloud({
-      pipeline,
-      buildId: build._id,
-      packageJson,
-      workDir,
-      projectRelPath: detectedProject.relPath || "",
-    });
+    // 2. Build and Deploy Frontend
+    if (frontend) {
+      await appendLog(build._id, `📦 Found frontend in: /${frontend.relPath || "root"}`);
+      const frontendEnv = { ...baseEnv };
+      if (backendUrl) {
+        frontendEnv["VITE_API_URL"] = backendUrl;
+        await appendLog(build._id, `🔗 Auto-linking frontend to backend: VITE_API_URL=${backendUrl}`);
+      }
+
+      // Install & Build Frontend
+      await runCommand("npm", ["install"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
+      if (frontend.packageJson.scripts?.build) {
+        await runCommand("npm", ["run", "build"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
+      }
+
+      const surgeUrl = await deployToSurge({ pipeline, buildId: build._id, workDir, project: frontend });
+      if (surgeUrl) finalUrls.push({ label: "Frontend UI", url: surgeUrl });
+    }
 
     const finishedAt = new Date();
     const duration = finishedAt - build.startedAt;
     await Build.findByIdAndUpdate(build._id, { status: "success", finishedAt, duration });
-    await Pipeline.findByIdAndUpdate(pipeline._id, { status: "success" });
-    await appendLog(build._id, "🎉 Pipeline finished successfully", "success");
+    await Pipeline.findByIdAndUpdate(pipeline._id, { status: "success", deployedUrls: finalUrls });
+    await appendLog(build._id, "🎉 Full-stack pipeline finished successfully", "success");
     broadcastDone(String(build._id), "success");
   } catch (err) {
     const finishedAt = new Date();

@@ -19,6 +19,13 @@ const pipelineSchema = new mongoose.Schema(
         value: { type: String, trim: true },
       },
     ],
+    renderServiceId: { type: String, default: null },
+    deployedUrls: [
+      {
+        label: { type: String },
+        url: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

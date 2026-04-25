@@ -130,6 +130,29 @@ export default function PipelineDetail() {
           </div>
         </div>
 
+        {/* Deployment URLs */}
+        {pipeline?.deployedUrls && pipeline.deployedUrls.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {pipeline.deployedUrls.map((d, idx) => (
+              <a 
+                key={idx}
+                href={d.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between bg-violet-600/10 border border-violet-500/30 hover:bg-violet-600/20 rounded-2xl p-4 transition-all shadow-sm hover:shadow-violet-500/10"
+              >
+                <div>
+                  <div className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">{d.label}</div>
+                  <div className="text-sm font-semibold text-white truncate max-w-[200px] sm:max-w-md">{d.url}</div>
+                </div>
+                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-600/20 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
         {/* Webhook card */}
         <div className="bg-gray-900/40 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 mb-8 shadow-sm">
           <h2 className="font-semibold mb-1 text-sm text-gray-400 uppercase tracking-wider">GitHub Webhook</h2>
