@@ -362,7 +362,8 @@ async function detectFullStackProjects(workDir) {
         type = "frontend";
       }
 
-      projects.push({ relPath: rel, dir, packageJson: pkg, type });
+      // Priority 1 for specific subdirs, 0 for root (we prefer subdirs if both exist)
+      projects.push({ relPath: rel, dir, packageJson: pkg, type, priority: rel === "" ? 0 : 1 });
     }
   }
 
@@ -503,8 +504,13 @@ async function runRealBuild(pipeline, build) {
       throw new Error("No Node.js projects detected in the repository.");
     }
 
-    const backend = projects.find((p) => p.type === "backend");
-    const frontend = projects.find((p) => p.type === "frontend") || projects.find((p) => p.packageJson.scripts?.build);
+    // Better project selection: prioritize non-root directories if they exist
+    const backend = projects
+      .filter((p) => p.type === "backend")
+      .sort((a, b) => b.priority - a.priority)[0];
+    const frontend = projects
+      .filter((p) => p.type === "frontend" || p.packageJson.scripts?.build)
+      .sort((a, b) => b.priority - a.priority)[0];
 
     // Prepare Base Env
     const baseEnv = {};
@@ -529,8 +535,8 @@ async function runRealBuild(pipeline, build) {
         await appendLog(build._id, `🔗 Auto-linking frontend to backend: VITE_API_URL=${backendUrl}`);
       }
 
-      // Install & Build Frontend
-      await runCommand("npm", ["install"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
+      // Install & Build Frontend (Include dev dependencies for build tools like Vite)
+      await runCommand("npm", ["install", "--include=dev"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
       if (frontend.packageJson.scripts?.build) {
         await runCommand("npm", ["run", "build"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
       }
