@@ -35,6 +35,14 @@ router.post("/", auth, async (req, res) => {
       branch: branch || "main",
       owner: req.user._id,
     });
+
+    // Auto-create GitHub webhook if possible
+    const user = await User.findById(req.user._id);
+    if (user?.accessToken && repo.includes("github.com")) {
+      // Run async in background
+      createGithubWebhook(user.accessToken, pipeline._id, repo, pipeline.webhookSecret);
+    }
+
     res.status(201).json(pipeline);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -162,6 +170,45 @@ function isValidGithubSignature(rawBody, signatureHeader, secret) {
   const actualBuf = Buffer.from(String(signatureHeader));
   if (expectedBuf.length !== actualBuf.length) return false;
   return crypto.timingSafeEqual(expectedBuf, actualBuf);
+}
+
+async function createGithubWebhook(userToken, pipelineId, repoUrl, secret) {
+  try {
+    const normalized = normalizeRepoToHttps(repoUrl);
+    // Extract owner and repo from https://github.com/owner/repo(.git)
+    const match = normalized.match(/github\.com\/([^/]+)\/([^/.]+)/);
+    if (!match) return;
+
+    const owner = match[1];
+    const repo = match[2];
+    const serverUrl = process.env.SERVER_URL || "http://localhost:5000";
+    const webhookUrl = `${serverUrl}/pipelines/${pipelineId}/webhook`;
+
+    await axios.post(
+      `https://api.github.com/repos/${owner}/${repo}/hooks`,
+      {
+        name: "web",
+        active: true,
+        events: ["push"],
+        config: {
+          url: webhookUrl,
+          content_type: "json",
+          secret: secret,
+          insecure_ssl: "0",
+        },
+      },
+      {
+        headers: {
+          Authorization: `token ${userToken}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      }
+    );
+    console.log(`✅ GitHub Webhook automatically created for ${owner}/${repo}`);
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    console.error(`⚠️ GitHub Webhook auto-creation skipped/failed: ${msg}`);
+  }
 }
 
 function normalizeRepoToHttps(repo) {
