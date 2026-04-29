@@ -62,6 +62,22 @@ router.get("/:id", auth, async (req, res) => {
   }
 });
 
+// ── PUT update pipeline environment variables ─────────────────────────────────
+router.put("/:id/env", auth, async (req, res) => {
+  try {
+    const { envVars } = req.body;
+    const pipeline = await Pipeline.findOneAndUpdate(
+      { _id: req.params.id, owner: req.user._id },
+      { envVars: envVars || [] },
+      { new: true }
+    );
+    if (!pipeline) return res.status(404).json({ error: "Pipeline not found" });
+    res.json(pipeline);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── DELETE pipeline (+ all its builds) ───────────────────────────────────────
 router.delete("/:id", auth, async (req, res) => {
   try {
@@ -517,6 +533,39 @@ async function runRealBuild(pipeline, build) {
     pipeline.envVars.forEach((ev) => { if (ev.key) baseEnv[ev.key] = ev.value; });
 
     const finalUrls = [];
+
+    // 0. Docker Build & Push (If Dockerfile exists)
+    const dockerfilePath = path.join(workDir, "Dockerfile");
+    if (await pathExists(dockerfilePath)) {
+      await appendLog(build._id, `🐳 Dockerfile detected. Initiating Docker Build & Push...`);
+      const dockerUser = process.env.DOCKER_USERNAME;
+      const dockerPass = process.env.DOCKER_PASSWORD;
+      const imageName = `${dockerUser || "local"}/${pipeline.name.toLowerCase()}:${build._id}`;
+
+      try {
+        if (dockerUser && dockerPass) {
+          await runCommand("docker", ["login", "-u", dockerUser, "-p", dockerPass], workDir, (line) => {
+            if (!line.includes("password") && !line.includes("Login Succeeded")) appendLog(build._id, line);
+          });
+          await appendLog(build._id, `✅ Authenticated with Docker Hub`);
+        } else {
+          await appendLog(build._id, `⚠️ DOCKER_USERNAME or DOCKER_PASSWORD missing. Skipping Docker Hub push.`, "warn");
+        }
+
+        await runCommand("docker", ["build", "-t", imageName, "."], workDir, (line) => appendLog(build._id, line));
+        await appendLog(build._id, `✅ Docker image built: ${imageName}`, "success");
+
+        if (dockerUser && dockerPass) {
+          await appendLog(build._id, `⬆️ Pushing image to Docker Hub...`);
+          await runCommand("docker", ["push", imageName], workDir, (line) => appendLog(build._id, line));
+          await appendLog(build._id, `✅ Image pushed successfully`, "success");
+          finalUrls.push({ label: "Docker Image", url: `https://hub.docker.com/r/${dockerUser}/${pipeline.name.toLowerCase()}` });
+        }
+      } catch (dockerErr) {
+        await appendLog(build._id, `❌ Docker Build/Push failed: ${dockerErr.message}`, "error");
+        throw dockerErr;
+      }
+    }
 
     // 1. Deploy Backend First
     let backendUrl = null;

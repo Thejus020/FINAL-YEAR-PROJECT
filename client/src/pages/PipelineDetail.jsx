@@ -27,6 +27,9 @@ export default function PipelineDetail() {
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [isEditingEnv, setIsEditingEnv] = useState(false);
+  const [editEnvVars, setEditEnvVars] = useState([]);
+  const [savingEnv, setSavingEnv] = useState(false);
 
   const fetchData = async () => {
     const [pRes, bRes] = await Promise.all([
@@ -82,6 +85,37 @@ export default function PipelineDetail() {
     navigator.clipboard.writeText(pipeline.webhookSecret);
     setCopiedSecret(true);
     setTimeout(() => setCopiedSecret(false), 2000);
+  };
+
+  const handleEditEnvClick = () => {
+    setEditEnvVars(pipeline?.envVars?.length ? [...pipeline.envVars] : [{ key: "", value: "" }]);
+    setIsEditingEnv(true);
+  };
+
+  const handleSaveEnvVars = async () => {
+    setSavingEnv(true);
+    try {
+      const filtered = editEnvVars.filter(ev => ev.key.trim() !== "");
+      const res = await fetch(`${API}/pipelines/${id}/env`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ envVars: filtered }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setPipeline(updated);
+        setIsEditingEnv(false);
+      } else {
+        alert("Failed to save variables");
+      }
+    } catch (err) {
+      alert("Error saving variables");
+    } finally {
+      setSavingEnv(false);
+    }
   };
 
   if (loading) {
@@ -191,19 +225,76 @@ export default function PipelineDetail() {
         </div>
 
         {/* Environment Variables card */}
-        {pipeline?.envVars && pipeline.envVars.length > 0 && (
-          <div className="bg-gray-900/40 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 mb-8 shadow-sm">
-            <h2 className="font-semibold mb-3 text-sm text-gray-400 uppercase tracking-wider">Environment Variables</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {pipeline.envVars.map((ev, idx) => (
-                <div key={idx} className="flex flex-col bg-gray-950 border border-gray-800/80 rounded-xl px-4 py-2">
-                  <span className="text-[10px] font-bold text-violet-400 uppercase tracking-tighter">{ev.key}</span>
-                  <span className="text-sm text-gray-300 font-mono truncate">{ev.value}</span>
+        <div className="bg-gray-900/40 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wider">Environment Variables</h2>
+            {!isEditingEnv && (
+              <button onClick={handleEditEnvClick} className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition">
+                Edit Variables
+              </button>
+            )}
+          </div>
+
+          {isEditingEnv ? (
+            <div className="space-y-3">
+              {editEnvVars.map((ev, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="KEY"
+                    value={ev.key}
+                    onChange={(e) => {
+                      const list = [...editEnvVars];
+                      list[idx].key = e.target.value;
+                      setEditEnvVars(list);
+                    }}
+                    className="flex-1 bg-gray-950/50 border border-gray-700/80 rounded-xl px-3 py-2 text-sm text-white focus:border-violet-500 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="VALUE"
+                    value={ev.value}
+                    onChange={(e) => {
+                      const list = [...editEnvVars];
+                      list[idx].value = e.target.value;
+                      setEditEnvVars(list);
+                    }}
+                    className="flex-1 bg-gray-950/50 border border-gray-700/80 rounded-xl px-3 py-2 text-sm text-white focus:border-violet-500 outline-none"
+                  />
+                  <button onClick={() => {
+                    const list = [...editEnvVars];
+                    list.splice(idx, 1);
+                    setEditEnvVars(list);
+                  }} className="text-gray-500 hover:text-red-400 p-2">✕</button>
                 </div>
               ))}
+              <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-800/50">
+                <button onClick={() => setEditEnvVars([...editEnvVars, { key: "", value: "" }])} className="text-xs text-violet-400 hover:text-violet-300">+ Add another</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setIsEditingEnv(false)} className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white transition">Cancel</button>
+                  <button onClick={handleSaveEnvVars} disabled={savingEnv} className="px-4 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-700 rounded-xl transition">
+                    {savingEnv ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <>
+              {pipeline?.envVars && pipeline.envVars.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pipeline.envVars.map((ev, idx) => (
+                    <div key={idx} className="flex flex-col bg-gray-950 border border-gray-800/80 rounded-xl px-4 py-2">
+                      <span className="text-[10px] font-bold text-violet-400 uppercase tracking-tighter">{ev.key}</span>
+                      <span className="text-sm text-gray-300 font-mono truncate">{ev.value}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No environment variables configured.</p>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Build history */}
         <h2 className="text-lg font-bold mb-4">Build History</h2>
