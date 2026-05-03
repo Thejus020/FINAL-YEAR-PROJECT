@@ -32,6 +32,10 @@ services:
         value: https://infraflow-server.onrender.com/auth/github/callback
       - key: LOCAL_DEPLOY_ENABLED
         value: false
+      - key: RENDER_API_KEY
+        value: rnd_CJGUPr0IixIqbfvhVQeBWuyGvpRm
+      - key: RENDER_OWNER_ID
+        value: usr-d5s4eue3jp1c73ekbcp0
 
   # ----------------------------------------
   # 2. Frontend App (React/Vite)
