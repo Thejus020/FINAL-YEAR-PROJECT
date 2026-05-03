@@ -38,7 +38,7 @@ passport.use(
 );
 
 // Initiate GitHub OAuth
-router.get("/github", passport.authenticate("github", { scope: ["user:email", "admin:repo_hook"] }));
+router.get("/github", passport.authenticate("github", { scope: ["user:email", "admin:repo_hook"], prompt: "consent" }));
 
 // GitHub OAuth callback
 router.get(
