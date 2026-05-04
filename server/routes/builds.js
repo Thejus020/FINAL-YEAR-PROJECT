@@ -5,6 +5,26 @@ const Pipeline = require("../models/Pipeline");
 
 const router = express.Router();
 
+// GET all builds across all pipelines for the current user
+router.get("/", auth, async (req, res) => {
+  try {
+    // Find all pipelines owned by the user
+    const pipelines = await Pipeline.find({ owner: req.user._id }).select('_id');
+    const pipelineIds = pipelines.map(p => p._id);
+
+    // Find latest 10 builds for these pipelines
+    const builds = await Build.find({ pipeline: { $in: pipelineIds } })
+      .populate("pipeline", "name")
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("-logs");
+
+    res.json(builds);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET all builds for a pipeline
 router.get("/pipeline/:pipelineId", auth, async (req, res) => {
   try {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import API from "../config";
@@ -78,6 +78,26 @@ export default function BuildView() {
     failed: "bg-red-500/20 text-red-300",
   };
 
+  // Determine current step based on logs
+  const currentStepIndex = useMemo(() => {
+    if (status === "queued") return 0;
+    if (status === "success") return 4;
+    
+    const logsStr = logs.map(l => l.message).join("\\n");
+    if (logsStr.includes("Running build") || logsStr.includes("npm run build")) return 3;
+    if (logsStr.includes("Running install") || logsStr.includes("npm ci")) return 2;
+    if (logsStr.includes("Cloning repository")) return 1;
+    return 0; // Setup
+  }, [logs, status]);
+
+  const steps = [
+    { label: "Setup environment", desc: "Provisioning runner" },
+    { label: "Checkout", desc: "Cloning repository code" },
+    { label: "Install dependencies", desc: "Running npm ci" },
+    { label: "Build project", desc: "Running build script" },
+    { label: "Complete", desc: "Finalizing execution" }
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col h-full max-w-6xl mx-auto w-full pb-8">
@@ -122,41 +142,107 @@ export default function BuildView() {
           </div>
         </div>
 
-        {/* Terminal window */}
-        <div className="flex-1 min-h-[50vh] bg-[#0d1117] border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
-          {/* macOS-style chrome */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[#161b22] border-b border-gray-800">
-            <span className="w-3 h-3 bg-red-500 rounded-full" />
-            <span className="w-3 h-3 bg-yellow-500 rounded-full" />
-            <span className="w-3 h-3 bg-green-500 rounded-full" />
-            <span className="ml-4 text-xs text-gray-500 font-mono">infraflow build log</span>
+        {/* Main Interface */}
+        <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[50vh]">
+          {/* Build Steps Sidebar */}
+          <div className="w-full md:w-64 shrink-0 bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 shadow-sm">
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Build Steps</h2>
+            <div className="space-y-6">
+              {steps.map((step, idx) => {
+                const isActive = idx === currentStepIndex && status === "running";
+                const isCompleted = idx < currentStepIndex || status === "success";
+                const isFailed = idx === currentStepIndex && status === "failed";
+                const isPending = idx > currentStepIndex && status !== "failed";
+
+                return (
+                  <div key={idx} className="relative flex gap-4">
+                    {/* Vertical line connector */}
+                    {idx < steps.length - 1 && (
+                      <div className={`absolute top-6 left-3 w-px h-full -ml-px ${isCompleted ? 'bg-violet-500' : 'bg-gray-800'}`} />
+                    )}
+                    
+                    {/* Status icon */}
+                    <div className="relative z-10 shrink-0">
+                      {isCompleted ? (
+                        <div className="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center border border-violet-500/30">
+                          <svg className="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                        </div>
+                      ) : isActive ? (
+                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-400/50 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                        </div>
+                      ) : isFailed ? (
+                        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                          <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-gray-900 border border-gray-700" />
+                      )}
+                    </div>
+                    
+                    {/* Step details */}
+                    <div className="flex-1 pb-1">
+                      <div className={`text-sm font-medium ${isCompleted || isActive ? 'text-gray-200' : isFailed ? 'text-red-400' : 'text-gray-500'}`}>
+                        {step.label}
+                      </div>
+                      <div className={`text-[11px] mt-0.5 ${isActive ? 'text-violet-300' : 'text-gray-600'}`}>
+                        {isActive ? 'In progress...' : isFailed ? 'Failed at this step' : step.desc}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Logs */}
-          <div className="flex-1 overflow-auto p-4 md:p-6 font-mono text-xs md:text-sm space-y-1.5">
-            {logs.length === 0 && (
-              <span className="text-gray-600 italic">Waiting for build to start...</span>
-            )}
-            {logs.map((log, i) => (
-              <div key={i} className={`flex gap-3 hover:bg-gray-800/30 rounded px-1 -mx-1 ${levelColor[log.level] || "text-gray-300"}`}>
-                <span className="text-gray-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60">
-                  {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
-                </span>
-                <span className="break-words whitespace-pre-wrap flex-1">{log.message}</span>
+          {/* Terminal window */}
+          <div className="flex-1 bg-[#0d1117] border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col shadow-2xl h-[600px] md:h-auto">
+            {/* macOS-style chrome */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-500 rounded-full" />
+                <span className="w-3 h-3 bg-yellow-500 rounded-full" />
+                <span className="w-3 h-3 bg-green-500 rounded-full" />
               </div>
-            ))}
-            {streaming && (
-              <div className="flex gap-3 text-gray-500">
-                <span className="w-16 md:w-20 shrink-0" />
-                <span className="animate-pulse">█</span>
-              </div>
-            )}
-            <div ref={bottomRef} />
+              <span className="text-xs text-gray-500 font-mono">infraflow build log</span>
+              <button 
+                className="text-xs text-gray-400 hover:text-white transition"
+                onClick={() => {
+                  const logText = logs.map(l => l.message).join('\\n');
+                  navigator.clipboard.writeText(logText);
+                  alert('Logs copied to clipboard!');
+                }}
+              >
+                Copy Logs
+              </button>
+            </div>
+
+            {/* Logs */}
+            <div className="flex-1 overflow-auto p-4 md:p-6 font-mono text-xs md:text-sm space-y-1.5 scroll-smooth">
+              {logs.length === 0 && (
+                <span className="text-gray-600 italic">Waiting for build to start...</span>
+              )}
+              {logs.map((log, i) => (
+                <div key={i} className={`flex gap-3 hover:bg-gray-800/30 rounded px-1 -mx-1 ${levelColor[log.level] || "text-gray-300"}`}>
+                  <span className="text-gray-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
+                  </span>
+                  <span className="break-words whitespace-pre-wrap flex-1">{log.message}</span>
+                </div>
+              ))}
+              {streaming && (
+                <div className="flex gap-3 text-gray-500">
+                  <span className="w-16 md:w-20 shrink-0" />
+                  <span className="animate-pulse">█</span>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
           </div>
         </div>
 
         {/* Status footer */}
-        {!streaming && (
+        {!streaming && status !== "queued" && status !== "running" && (
           <div
             className={`mt-6 rounded-2xl px-6 py-4 text-sm font-medium border backdrop-blur-sm shadow-sm ${
               status === "success"

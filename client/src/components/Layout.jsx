@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
+import JesterAI from "./JesterAI";
 
 export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,6 +30,8 @@ export default function Layout({ children }) {
           {children}
         </div>
       </div>
+      
+      <JesterAI />
     </div>
   );
 }
