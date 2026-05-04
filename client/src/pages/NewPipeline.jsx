@@ -31,6 +31,11 @@ export default function NewPipeline() {
       setError("Pipeline name and repository URL are required.");
       return;
     }
+    const urlRegex = /^(https?:\/\/)?(www\.)?(github\.com\/)[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\/)?$/;
+    if (!urlRegex.test(repo.trim())) {
+      setError("Please enter a valid GitHub repository URL (e.g., https://github.com/user/repo).");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${API}/pipelines`, {
@@ -149,30 +154,32 @@ jobs:
             
             <div className="space-y-3">
               {envVars.map((ev, idx) => (
-                <div key={idx} className="flex gap-2">
+                <div key={idx} className="flex flex-col sm:flex-row gap-2 relative">
                   <input
                     type="text"
                     placeholder="KEY (e.g. VITE_API_URL)"
                     value={ev.key}
                     onChange={(e) => handleEnvChange(idx, "key", e.target.value)}
-                    className="flex-1 bg-[#040814]/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition"
+                    className="flex-1 w-full bg-[#040814]/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition"
                   />
-                  <input
-                    type="text"
-                    placeholder="VALUE"
-                    value={ev.value}
-                    onChange={(e) => handleEnvChange(idx, "value", e.target.value)}
-                    className="flex-1 bg-[#040814]/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition"
-                  />
-                  {envVars.length > 1 && (
-                    <button 
-                      type="button"
-                      onClick={() => removeEnvVar(idx)}
-                      className="text-slate-500 hover:text-rose-400 transition p-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  )}
+                  <div className="flex gap-2 flex-1 w-full">
+                    <input
+                      type="text"
+                      placeholder="VALUE"
+                      value={ev.value}
+                      onChange={(e) => handleEnvChange(idx, "value", e.target.value)}
+                      className="flex-1 w-full bg-[#040814]/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition"
+                    />
+                    {envVars.length > 1 && (
+                      <button 
+                        type="button"
+                        onClick={() => removeEnvVar(idx)}
+                        className="text-slate-500 hover:text-rose-400 transition p-2 shrink-0 bg-white/5 sm:bg-transparent rounded-lg border border-white/10 sm:border-transparent"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               <p className="text-[11px] text-slate-500 mt-2 font-medium">

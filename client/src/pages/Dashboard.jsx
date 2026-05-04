@@ -78,7 +78,7 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row gap-8 pb-8">
         {/* Main Content: My Pipelines */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-8">
             <h1 className="text-3xl font-black bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-sm">My Pipelines</h1>
             <button
               onClick={() => navigate("/pipeline/new")}
