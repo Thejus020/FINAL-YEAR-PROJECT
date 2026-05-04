@@ -48,14 +48,20 @@ Keep responses concise, helpful, and use markdown formatting. Do not hallucinate
     try {
       const parsed = typeof error?.message === 'string' ? JSON.parse(error.message) : null;
       const code = parsed?.error?.code;
+      const reason = parsed?.error?.details?.[0]?.reason;
+      
       if (code === 429) {
         const retryDelay = parsed?.error?.details?.find(d => d['@type']?.includes('RetryInfo'))?.retryDelay || '60s';
         userMessage = `⏳ Gemini API quota exceeded. Please try again in ${retryDelay}. If this keeps happening, create a new API key at aistudio.google.com.`;
+      } else if (code === 400 && (reason === 'API_KEY_INVALID' || parsed?.error?.message?.includes('expired'))) {
+        userMessage = `🔑 The Gemini API key has expired. Please create a new one at aistudio.google.com and update your environment variables.`;
       }
     } catch (_) {
       // detail wasn't JSON — keep the generic message
       if (detail.includes('429') || detail.includes('quota') || detail.includes('RESOURCE_EXHAUSTED')) {
         userMessage = '⏳ Gemini API quota exceeded. Please try again in a minute, or create a new API key at aistudio.google.com.';
+      } else if (detail.includes('expired') || detail.includes('API_KEY_INVALID')) {
+        userMessage = `🔑 The Gemini API key has expired. Please create a new one at aistudio.google.com and update your environment variables.`;
       }
     }
 
