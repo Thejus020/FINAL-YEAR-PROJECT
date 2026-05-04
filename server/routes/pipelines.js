@@ -416,9 +416,11 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
         ownerId,
         repo: normalizeRepoToHttps(pipeline.repo),
         serviceDetails: {
-          runtime: "node",
-          buildCommand: "npm install",
-          startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
+          env: "node",
+          envSpecificDetails: {
+            buildCommand: "npm install",
+            startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
+          },
           envVars: Object.entries(envVars).map(([key, value]) => ({ key, value })),
         },
       });

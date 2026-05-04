@@ -1,0 +1,17 @@
+[
+  {"key":"GEMINI_API_KEY","value":"AIzaSyBbPGFj4orADG8lNw8benSrDYxlHJe4ekc"},
+  {"key":"RENDER_OWNER_ID","value":"tea-d5s4eue3jp1c73ekbclg"},
+  {"key":"RENDER_API_KEY","value":"rnd_CJGUPr0IixIqbfvhVQeBWuyGvpRm"},
+  {"key":"SURGE_TOKEN","value":"32efd32fb8c75162df66f05999b0d793"},
+  {"key":"JWT_SECRET","value":"super_secret_jwt_key_for_infraflow"},
+  {"key":"GITHUB_CLIENT_SECRET","value":"52d254edc3e1d6635fb02cbc45c164ece975530a"},
+  {"key":"GITHUB_CLIENT_ID","value":"Ov23lietpQfvIncOFMGf"},
+  {"key":"MONGO_URI","value":"mongodb+srv://Project2026:infraflow123@cluster0.nghh0wb.mongodb.net/?appName=Cluster0"},
+  {"key":"LOCAL_DEPLOY_ENABLED","value":"false"},
+  {"key":"GITHUB_CALLBACK_URL","value":"https://infraflow-server.onrender.com/auth/github/callback"},
+  {"key":"ALLOWED_ORIGINS","value":"https://infraflow-client.onrender.com"},
+  {"key":"CLIENT_URL","value":"https://infraflow-client.onrender.com"},
+  {"key":"SERVER_URL","value":"https://infraflow-server.onrender.com"},
+  {"key":"PORT","value":"5000"},
+  {"key":"NODE_VERSION","value":"20"}
+]
