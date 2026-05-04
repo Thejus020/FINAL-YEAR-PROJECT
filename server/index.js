@@ -7,6 +7,7 @@ const http = require("http");
 const authRoutes = require("./routes/auth");
 const pipelineRoutes = require("./routes/pipelines");
 const buildRoutes = require("./routes/builds");
+const chatRoutes = require("./routes/chat");
 const streamRoutes = require("./routes/stream");
 const { corsOriginCallback, origins } = require("./corsAllowlist");
 
@@ -28,6 +29,7 @@ app.use(
 app.use("/auth", authRoutes);
 app.use("/pipelines", pipelineRoutes);
 app.use("/builds", buildRoutes);
+app.use("/api/chat", chatRoutes);
 app.use("/stream", streamRoutes);
 
 app.get("/", (req, res) => {

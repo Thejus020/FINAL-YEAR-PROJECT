@@ -6,12 +6,12 @@ export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="flex h-screen overflow-hidden text-slate-200">
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto w-full relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto w-full relative md:pl-6 md:pt-6">
         {/* Mobile Header with Hamburger */}
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
+        <header className="md:hidden flex items-center justify-between p-4 border-b border-white/10 bg-[#0B0F19]/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
           <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
             InfraFlow
           </span>

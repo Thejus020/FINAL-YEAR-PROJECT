@@ -101,27 +101,7 @@ export default function BuildView() {
   return (
     <Layout>
       <div className="flex flex-col h-full max-w-6xl mx-auto w-full pb-8">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="group flex items-center gap-2.5 text-gray-400 hover:text-white text-sm font-medium mb-6 md:mb-8 transition-colors w-fit"
-        >
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/50 border border-gray-800/80 group-hover:bg-gray-800 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-          </div>
-          Back
-        </button>
-
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold truncate bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              {build?.pipeline?.name || "Build"} <span className="text-gray-500">#{id.slice(-6)}</span>
-            </h1>
-            <div className="text-gray-500 text-sm mt-1 whitespace-normal md:truncate">
-              <span className="inline-flex items-center font-medium bg-gray-900 border border-gray-800 px-2 py-0.5 rounded-md shadow-sm">
-                {build?.triggeredBy === "webhook" ? (
-                  <><svg className="w-3.5 h-3.5 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>Webhook</>
-                ) : (
                   <><svg className="w-3.5 h-3.5 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>Manual</>
                 )}
               </span>
@@ -145,8 +125,11 @@ export default function BuildView() {
         {/* Main Interface */}
         <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[50vh]">
           {/* Build Steps Sidebar */}
-          <div className="w-full md:w-64 shrink-0 bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 shadow-sm">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Build Steps</h2>
+          <div className="w-full md:w-64 shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.5)]">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              Build Steps
+            </h2>
             <div className="space-y-6">
               {steps.map((step, idx) => {
                 const isActive = idx === currentStepIndex && status === "running";
@@ -158,34 +141,34 @@ export default function BuildView() {
                   <div key={idx} className="relative flex gap-4">
                     {/* Vertical line connector */}
                     {idx < steps.length - 1 && (
-                      <div className={`absolute top-6 left-3 w-px h-full -ml-px ${isCompleted ? 'bg-violet-500' : 'bg-gray-800'}`} />
+                      <div className={`absolute top-6 left-3 w-px h-full -ml-px ${isCompleted ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'bg-white/10'}`} />
                     )}
                     
                     {/* Status icon */}
-                    <div className="relative z-10 shrink-0">
+                    <div className="relative z-10 shrink-0 mt-1">
                       {isCompleted ? (
-                        <div className="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center border border-violet-500/30">
-                          <svg className="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                        <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]">
+                          <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
                         </div>
                       ) : isActive ? (
-                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-400/50 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                        <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center border border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                          <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
                         </div>
                       ) : isFailed ? (
-                        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]">
-                          <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]">
+                          <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-gray-900 border border-gray-700" />
+                        <div className="w-6 h-6 rounded-full bg-black/40 border border-white/10" />
                       )}
                     </div>
                     
                     {/* Step details */}
-                    <div className="flex-1 pb-1">
-                      <div className={`text-sm font-medium ${isCompleted || isActive ? 'text-gray-200' : isFailed ? 'text-red-400' : 'text-gray-500'}`}>
+                    <div className="flex-1 pb-2">
+                      <div className={`text-sm font-bold ${isCompleted || isActive ? 'text-slate-200' : isFailed ? 'text-rose-400' : 'text-slate-500'}`}>
                         {step.label}
                       </div>
-                      <div className={`text-[11px] mt-0.5 ${isActive ? 'text-violet-300' : 'text-gray-600'}`}>
+                      <div className={`text-xs mt-1 font-medium ${isActive ? 'text-cyan-300 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]' : 'text-slate-600'}`}>
                         {isActive ? 'In progress...' : isFailed ? 'Failed at this step' : step.desc}
                       </div>
                     </div>
@@ -196,17 +179,17 @@ export default function BuildView() {
           </div>
 
           {/* Terminal window */}
-          <div className="flex-1 bg-[#0d1117] border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col shadow-2xl h-[600px] md:h-auto">
+          <div className="flex-1 bg-[#0a0f1c]/90 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.6)] h-[600px] md:h-auto">
             {/* macOS-style chrome */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-gray-800">
+            <div className="flex items-center justify-between px-5 py-4 bg-white/5 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-500 rounded-full" />
-                <span className="w-3 h-3 bg-yellow-500 rounded-full" />
-                <span className="w-3 h-3 bg-green-500 rounded-full" />
+                <span className="w-3 h-3 bg-rose-500 rounded-full" />
+                <span className="w-3 h-3 bg-amber-500 rounded-full" />
+                <span className="w-3 h-3 bg-emerald-500 rounded-full" />
               </div>
-              <span className="text-xs text-gray-500 font-mono">infraflow build log</span>
+              <span className="text-xs text-slate-400 font-mono font-bold tracking-wider">infraflow build log</span>
               <button 
-                className="text-xs text-gray-400 hover:text-white transition"
+                className="text-xs font-bold text-slate-500 hover:text-cyan-400 transition-colors"
                 onClick={() => {
                   const logText = logs.map(l => l.message).join('\\n');
                   navigator.clipboard.writeText(logText);
@@ -218,22 +201,22 @@ export default function BuildView() {
             </div>
 
             {/* Logs */}
-            <div className="flex-1 overflow-auto p-4 md:p-6 font-mono text-xs md:text-sm space-y-1.5 scroll-smooth">
+            <div className="flex-1 overflow-auto p-4 md:p-6 font-mono text-xs md:text-sm space-y-1.5 scroll-smooth custom-scrollbar">
               {logs.length === 0 && (
-                <span className="text-gray-600 italic">Waiting for build to start...</span>
+                <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                <div key={i} className={`flex gap-3 hover:bg-gray-800/30 rounded px-1 -mx-1 ${levelColor[log.level] || "text-gray-300"}`}>
-                  <span className="text-gray-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60">
+                <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
+                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1">
                     {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
                   </span>
-                  <span className="break-words whitespace-pre-wrap flex-1">{log.message}</span>
+                  <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
                 </div>
               ))}
               {streaming && (
-                <div className="flex gap-3 text-gray-500">
-                  <span className="w-16 md:w-20 shrink-0" />
-                  <span className="animate-pulse">█</span>
+                <div className="flex gap-3 text-cyan-500">
+                  <span className="w-16 md:w-20 shrink-0 border-r border-white/5 mr-1" />
+                  <span className="animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.5)]">█</span>
                 </div>
               )}
               <div ref={bottomRef} />
