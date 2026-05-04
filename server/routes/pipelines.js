@@ -417,6 +417,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
         repo: normalizeRepoToHttps(pipeline.repo),
         serviceDetails: {
           env: "node",
+          plan: "free",
           envSpecificDetails: {
             buildCommand: "npm install",
             startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
@@ -440,6 +441,11 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
     return url;
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
+    if (msg.includes("Payment information is required")) {
+      await appendLog(buildId, `⚠️ Render requires a credit card on file to create new services via their API.`, "warn");
+      await appendLog(buildId, `⏭️ Skipping automatic backend deployment...`, "warn");
+      return null;
+    }
     throw new Error(`Render deployment failed: ${msg}`);
   }
 }
