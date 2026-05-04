@@ -72,10 +72,10 @@ export default function BuildView() {
   }, [logs]);
 
   const statusBadge = {
-    queued: "bg-gray-700 text-gray-300",
-    running: "bg-yellow-500/20 text-yellow-300",
-    success: "bg-green-500/20 text-green-300",
-    failed: "bg-red-500/20 text-red-300",
+    queued: "bg-white/5 text-slate-300",
+    running: "bg-cyan-500/20 text-cyan-300",
+    success: "bg-indigo-500/20 text-indigo-300",
+    failed: "bg-rose-500/20 text-rose-300",
   };
 
   // Determine current step based on logs
@@ -102,20 +102,41 @@ export default function BuildView() {
     <Layout>
       <div className="flex flex-col h-full max-w-6xl mx-auto w-full pb-8">
         {/* Header */}
-                  <><svg className="w-3.5 h-3.5 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>Manual</>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <button 
+              onClick={() => navigate(-1)} 
+              className="group flex items-center gap-2.5 text-slate-400 hover:text-slate-100 text-sm font-bold mb-4 transition-colors w-fit"
+            >
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:bg-white/10 transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+              </div>
+              Back
+            </button>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-sm truncate max-w-sm md:max-w-xl">
+                {build?.pipeline?.name || "Build"} <span className="text-slate-600 font-mono text-xl">#{id.slice(-6)}</span>
+              </h1>
+            </div>
+            <div className="text-slate-500 text-sm mt-3 whitespace-normal md:truncate">
+              <span className="inline-flex items-center font-bold bg-[#0a0f1c]/50 border border-white/10 px-2.5 py-1 rounded-lg shadow-sm">
+                {build?.triggeredBy === "webhook" ? (
+                  <><svg className="w-3.5 h-3.5 mr-1.5 opacity-70 text-cyan-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>Webhook</>
+                ) : (
+                  <><svg className="w-3.5 h-3.5 mr-1.5 opacity-70 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>Manual</>
                 )}
               </span>
-              {build?.duration ? <span className="ml-2 font-mono text-xs border-l border-gray-700 pl-2">{formatDuration(build.duration)}</span> : ""}
+              {build?.duration ? <span className="ml-3 font-mono text-xs border-l border-white/10 pl-3 text-slate-400">{formatDuration(build.duration)}</span> : ""}
             </div>
           </div>
           
           <div className="flex items-center gap-4 self-start md:self-auto">
-            <span className={`text-xs px-3 py-1.5 rounded-md font-medium border ${statusBadge[status].replace('text-', 'border-').replace('bg-', 'border-').replace('/20', '/40')} ${statusBadge[status]}`}>
+            <span className={`text-[10px] md:text-xs px-3 py-1.5 rounded-md font-black uppercase tracking-widest border ${statusBadge[status] ? statusBadge[status].replace('text-', 'border-').replace('bg-', 'border-').replace('/20', '/40') : ''} ${statusBadge[status] || ''}`}>
               {status}
             </span>
             {streaming && (
-              <span className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-900/10 border border-violet-900/30 px-3 py-1.5 rounded-md">
-                <span className="w-2 h-2 bg-violet-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+              <span className="flex items-center gap-1.5 text-[10px] md:text-xs text-cyan-400 bg-cyan-900/10 border border-cyan-900/30 px-3 py-1.5 rounded-md font-black uppercase tracking-widest">
+                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                 streaming
               </span>
             )}
