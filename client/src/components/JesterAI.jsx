@@ -28,13 +28,23 @@ export default function JesterAI() {
     setIsTyping(true);
     
     try {
-      const response = await API.post("/api/chat", { messages: newMessages });
-      setMessages(prev => [...prev, { role: "assistant", content: response.data.reply }]);
+      const response = await fetch(`${API}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages })
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch response");
+      }
+      
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { 
         role: "assistant", 
-        content: "⚠️ " + (err.response?.data?.message || "Oops! I couldn't connect to the server. Make sure your GEMINI_API_KEY is configured!") 
+        content: "⚠️ " + (err.message || "Oops! I couldn't connect to the server. Make sure your GEMINI_API_KEY is configured!") 
       }]);
     } finally {
       setIsTyping(false);
