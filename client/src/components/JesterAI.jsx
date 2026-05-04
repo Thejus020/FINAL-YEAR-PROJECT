@@ -44,7 +44,7 @@ export default function JesterAI() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
-        <div className="bg-[#0a0f1c]/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] w-80 sm:w-96 h-[500px] mb-4 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.6)] overflow-hidden transform origin-bottom-right transition-all animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-200">
+        <div className="bg-[#0a0f1c]/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] w-[calc(100vw-3rem)] sm:w-96 h-[500px] max-h-[75vh] mb-4 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.6)] overflow-hidden transform origin-bottom-right transition-all animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-200">
           {/* Header */}
           <div className="px-5 py-4 border-b border-white/10 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -118,9 +118,9 @@ export default function JesterAI() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-400 to-indigo-500 text-white rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
+          className="group relative flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-cyan-400 to-indigo-500 text-white rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
         >
-          <span className="text-3xl drop-shadow-md group-hover:animate-wiggle">🃏</span>
+          <span className="text-2xl md:text-3xl drop-shadow-md group-hover:animate-wiggle">🃏</span>
           
           {/* Notification Badge */}
           <span className="absolute top-0 right-0 flex h-3.5 w-3.5">

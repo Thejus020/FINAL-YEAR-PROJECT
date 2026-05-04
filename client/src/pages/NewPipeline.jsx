@@ -216,10 +216,13 @@ jobs:
                 {generateYaml().split('\n').map((line, i) => (
                   <div key={i} className="table-row hover:bg-white/5 transition-colors">
                     <span className="table-cell select-none text-right pr-4 text-slate-600 border-r border-white/5 mr-4">{i + 1}</span>
-                    <span className="table-cell whitespace-pre pl-4">
-                      {line.replace(/(name|on|push|branches|jobs|build|runs-on|steps|uses|env|run):/g, '<span class="text-cyan-400 font-bold">$1</span>:')
-                           .replace(/(- )/g, '<span class="text-indigo-400 font-bold">$1</span>')}
-                    </span>
+                    <span 
+                      className="table-cell whitespace-pre pl-4"
+                      dangerouslySetInnerHTML={{
+                        __html: line.replace(/(name|on|push|branches|jobs|build|runs-on|steps|uses|env|run):/g, '<span class="text-cyan-400 font-bold">$1</span>:')
+                                    .replace(/(- )/g, '<span class="text-indigo-400 font-bold">$1</span>')
+                      }}
+                    />
                   </div>
                 ))}
               </code>

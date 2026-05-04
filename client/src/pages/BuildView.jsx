@@ -144,9 +144,9 @@ export default function BuildView() {
         </div>
 
         {/* Main Interface */}
-        <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[50vh]">
+        <div className="flex-1 flex flex-col md:flex-row gap-6 h-auto md:h-[600px]">
           {/* Build Steps Sidebar */}
-          <div className="w-full md:w-64 shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.5)]">
+          <div className="w-full md:w-64 shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.5)] h-auto md:h-full overflow-y-auto custom-scrollbar">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               Build Steps
@@ -200,7 +200,7 @@ export default function BuildView() {
           </div>
 
           {/* Terminal window */}
-          <div className="flex-1 bg-[#0a0f1c]/90 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.6)] h-[600px] md:h-auto">
+          <div className="flex-1 bg-[#0a0f1c]/90 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.6)] h-[500px] md:h-full">
             {/* macOS-style chrome */}
             <div className="flex items-center justify-between px-5 py-4 bg-white/5 border-b border-white/10">
               <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function BuildView() {
               )}
               {logs.map((log, i) => (
                 <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
-                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1">
+                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
                     {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
                   </span>
                   <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>

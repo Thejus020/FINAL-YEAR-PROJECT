@@ -89,7 +89,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8">
             {[
               { label: "Total", value: total, color: "text-slate-100", bg: "bg-white/5", shadow: "shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]" },
               { label: "Running", value: running, color: "text-cyan-400", bg: "bg-cyan-500/10", shadow: "shadow-[inset_0_1px_0_rgba(6,182,212,0.2)]" },
@@ -170,7 +170,7 @@ export default function Dashboard() {
 
         {/* Right Sidebar: Recent Activity */}
         <div className="w-full lg:w-80 shrink-0">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 sticky top-24 shadow-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 sticky top-8 shadow-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             <h2 className="text-sm font-black text-slate-300 uppercase tracking-widest mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               Recent Activity
