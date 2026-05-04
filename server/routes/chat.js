@@ -31,7 +31,7 @@ Keep responses concise, helpful, and use markdown formatting. Do not hallucinate
     }));
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: contents,
       config: {
         systemInstruction: systemInstruction,
@@ -40,10 +40,11 @@ Keep responses concise, helpful, and use markdown formatting. Do not hallucinate
 
     res.json({ reply: response.text });
   } catch (error) {
-    console.error('Jester AI Error:', error);
+    const detail = error?.message || String(error);
+    console.error('Jester AI Error:', detail);
     res.status(500).json({ 
       error: 'AI Error',
-      message: 'An error occurred while communicating with Jester AI. Please check your API key and connection.' 
+      message: `Jester AI error: ${detail}`
     });
   }
 });
