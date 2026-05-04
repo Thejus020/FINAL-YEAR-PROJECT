@@ -42,10 +42,24 @@ Keep responses concise, helpful, and use markdown formatting. Do not hallucinate
   } catch (error) {
     const detail = error?.message || String(error);
     console.error('Jester AI Error:', detail);
-    res.status(500).json({ 
-      error: 'AI Error',
-      message: `Jester AI error: ${detail}`
-    });
+
+    // Parse quota/rate-limit errors for a clean user-facing message
+    let userMessage = `Jester AI error: ${detail}`;
+    try {
+      const parsed = typeof error?.message === 'string' ? JSON.parse(error.message) : null;
+      const code = parsed?.error?.code;
+      if (code === 429) {
+        const retryDelay = parsed?.error?.details?.find(d => d['@type']?.includes('RetryInfo'))?.retryDelay || '60s';
+        userMessage = `⏳ Gemini API quota exceeded. Please try again in ${retryDelay}. If this keeps happening, create a new API key at aistudio.google.com.`;
+      }
+    } catch (_) {
+      // detail wasn't JSON — keep the generic message
+      if (detail.includes('429') || detail.includes('quota') || detail.includes('RESOURCE_EXHAUSTED')) {
+        userMessage = '⏳ Gemini API quota exceeded. Please try again in a minute, or create a new API key at aistudio.google.com.';
+      }
+    }
+
+    res.status(500).json({ error: 'AI Error', message: userMessage });
   }
 });
 
