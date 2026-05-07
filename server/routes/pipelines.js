@@ -461,7 +461,11 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
           envVars: renderEnvVars,
         },
       });
-      serviceId = res.data.id;
+      const createdService = unwrapRenderService(res.data);
+      serviceId = createdService?.id;
+      if (!serviceId) {
+        throw new Error(`Render service creation returned no service id: ${JSON.stringify(res.data)}`);
+      }
       isNew = true;
       await Pipeline.findByIdAndUpdate(pipeline._id, { renderServiceId: serviceId });
     } else {
@@ -472,7 +476,11 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
 
     // Get the URL
     const serviceRes = await api.get(`/services/${serviceId}`);
-    const url = serviceRes.data.serviceDetails.url;
+    const service = unwrapRenderService(serviceRes.data);
+    const url = service?.serviceDetails?.url || service?.url;
+    if (!url) {
+      throw new Error(`Render service ${serviceId} did not include a public URL yet.`);
+    }
     await appendLog(buildId, `🌐 Backend is live at: ${url}`, "success");
     return url;
   } catch (err) {
@@ -487,6 +495,10 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
     }
     throw new Error(`Render deployment failed: ${msg}`);
   }
+}
+
+function unwrapRenderService(payload) {
+  return payload?.service || payload;
 }
 
 function buildRenderEnvVars(pipelineEnvVars, serviceUrl) {
