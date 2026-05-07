@@ -380,6 +380,17 @@ async function getNodeStartCommand(project) {
   return null;
 }
 
+async function restoreNodeBinExecutables(projectDir, buildId) {
+  const binDir = path.join(projectDir, "node_modules", ".bin");
+  if (!(await pathExists(binDir))) return;
+
+  try {
+    await runCommandCapture("chmod", ["-R", "u+x", binDir], projectDir, { timeoutMs: 10000 });
+  } catch (err) {
+    await appendLog(buildId, `Could not update node_modules/.bin permissions: ${err.message}`, "warn");
+  }
+}
+
 async function detectFullStackProjects(workDir) {
   const candidates = ["", "client", "frontend", "web", "app", "server", "backend", "api"];
   const projects = [];
@@ -681,6 +692,7 @@ async function runRealBuild(pipeline, build) {
 
       // Install & Build Frontend (Include dev dependencies for build tools like Vite)
       await runCommand("npm", ["install", "--include=dev"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
+      await restoreNodeBinExecutables(frontend.dir, build._id);
       if (frontend.packageJson.scripts?.build) {
         await runCommand("npm", ["run", "build"], frontend.dir, (line, level) => appendLog(build._id, line, level), { env: frontendEnv });
       }
