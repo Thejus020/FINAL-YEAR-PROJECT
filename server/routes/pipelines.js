@@ -412,6 +412,8 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
       const randomSuffix = crypto.randomBytes(3).toString("hex"); // 6 character alphanumeric suffix
       const serviceName = `${pipeline.name}-backend-${randomSuffix}`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
       const renderPlan = process.env.RENDER_PLAN || "free";
+      const serviceUrl = `https://${serviceName}.onrender.com`;
+      const renderEnvVars = buildRenderEnvVars(envVars, serviceUrl);
       await appendLog(buildId, `Creating new Render Web Service: ${serviceName} (${renderPlan} plan)`);
       const res = await api.post("/services", {
         type: "web_service",
@@ -425,7 +427,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
             buildCommand: "npm install",
             startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
           },
-          envVars: Object.entries(envVars).map(([key, value]) => ({ key, value })),
+          envVars: renderEnvVars,
         },
       });
       serviceId = res.data.id;
@@ -454,6 +456,34 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
     }
     throw new Error(`Render deployment failed: ${msg}`);
   }
+}
+
+function buildRenderEnvVars(pipelineEnvVars, serviceUrl) {
+  const merged = {
+    NODE_VERSION: process.env.NODE_VERSION || "20",
+    SERVER_URL: serviceUrl,
+    GITHUB_CALLBACK_URL: `${serviceUrl}/auth/github/callback`,
+  };
+
+  const forwardedKeys = [
+    "MONGO_URI",
+    "JWT_SECRET",
+    "GITHUB_CLIENT_ID",
+    "GITHUB_CLIENT_SECRET",
+    "CLIENT_URL",
+    "ALLOWED_ORIGINS",
+    "GEMINI_API_KEY",
+  ];
+
+  for (const key of forwardedKeys) {
+    if (process.env[key]) merged[key] = process.env[key];
+  }
+
+  for (const [key, value] of Object.entries(pipelineEnvVars || {})) {
+    if (key) merged[key] = value;
+  }
+
+  return Object.entries(merged).map(([key, value]) => ({ key, value: String(value) }));
 }
 
 async function deployToSurge({ pipeline, buildId, workDir, project }) {
