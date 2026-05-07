@@ -360,6 +360,15 @@ async function readJsonIfExists(filePath) {
   }
 }
 
+async function isCommandAvailable(command, cwd) {
+  try {
+    await runCommandCapture(command, ["--version"], cwd, { timeoutMs: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function detectFullStackProjects(workDir) {
   const candidates = ["", "client", "frontend", "web", "app", "server", "backend", "api"];
   const projects = [];
@@ -582,6 +591,14 @@ async function runRealBuild(pipeline, build) {
     const dockerfilePath = path.join(workDir, "Dockerfile");
     if (await pathExists(dockerfilePath)) {
       await appendLog(build._id, `🐳 Dockerfile detected. Initiating Docker Build & Push...`);
+      const dockerAvailable = await isCommandAvailable("docker", workDir);
+      if (!dockerAvailable) {
+        await appendLog(
+          build._id,
+          "Docker is not available in this environment. Skipping Docker build and continuing with app deployment.",
+          "warn"
+        );
+      } else {
       const dockerUser = process.env.DOCKER_USERNAME;
       const dockerPass = process.env.DOCKER_PASSWORD;
       const imageName = `${dockerUser || "local"}/${pipeline.name.toLowerCase()}:${build._id}`;
@@ -606,8 +623,8 @@ async function runRealBuild(pipeline, build) {
           finalUrls.push({ label: "Docker Image", url: `https://hub.docker.com/r/${dockerUser}/${pipeline.name.toLowerCase()}` });
         }
       } catch (dockerErr) {
-        await appendLog(build._id, `❌ Docker Build/Push failed: ${dockerErr.message}`, "error");
-        throw dockerErr;
+        await appendLog(build._id, `Docker Build/Push skipped after failure: ${dockerErr.message}`, "warn");
+      }
       }
     }
 
