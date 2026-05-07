@@ -411,7 +411,8 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
       // Create new service
       const randomSuffix = crypto.randomBytes(3).toString("hex"); // 6 character alphanumeric suffix
       const serviceName = `${pipeline.name}-backend-${randomSuffix}`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-      await appendLog(buildId, `✨ Creating new Render Web Service: ${serviceName}`);
+      const renderPlan = process.env.RENDER_PLAN || "free";
+      await appendLog(buildId, `Creating new Render Web Service: ${serviceName} (${renderPlan} plan)`);
       const res = await api.post("/services", {
         type: "web_service",
         name: serviceName,
@@ -419,6 +420,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
         repo: normalizeRepoToHttps(pipeline.repo),
         serviceDetails: {
           env: "node",
+          plan: renderPlan,
           envSpecificDetails: {
             buildCommand: "npm install",
             startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
@@ -442,6 +444,14 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
     return url;
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
+    if (/payment information|billing|add a card/i.test(msg)) {
+      await appendLog(
+        buildId,
+        `Render deployment skipped: ${msg}. Add billing in Render, remove Render env vars, or use an existing renderServiceId to deploy backend.`,
+        "warn"
+      );
+      return null;
+    }
     throw new Error(`Render deployment failed: ${msg}`);
   }
 }
