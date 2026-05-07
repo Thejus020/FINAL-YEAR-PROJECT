@@ -369,6 +369,17 @@ async function isCommandAvailable(command, cwd) {
   }
 }
 
+async function getNodeStartCommand(project) {
+  if (project.packageJson?.scripts?.start) return "npm start";
+
+  const entries = ["index.js", "server.js", "app.js", "src/index.js", "src/server.js", "src/app.js"];
+  for (const entry of entries) {
+    if (await pathExists(path.join(project.dir, entry))) return `node ${entry}`;
+  }
+
+  return null;
+}
+
 async function detectFullStackProjects(workDir) {
   const candidates = ["", "client", "frontend", "web", "app", "server", "backend", "api"];
   const projects = [];
@@ -379,10 +390,12 @@ async function detectFullStackProjects(workDir) {
     if (pkg) {
       // Logic to determine type:
       const hasBuild = !!pkg.scripts?.build;
+      const hasStart = !!pkg.scripts?.start;
+      const hasServerEntry = await getNodeStartCommand({ dir, packageJson: pkg });
       const isNamedBackend = rel.match(/server|backend|api/i);
       const isNamedFrontend = rel.match(/client|frontend|web|app/i);
 
-      let type = "backend";
+      let type = hasStart || hasServerEntry ? "backend" : "frontend";
       if (isNamedFrontend || (hasBuild && !isNamedBackend)) {
         type = "frontend";
       }
@@ -423,6 +436,15 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
       const renderPlan = process.env.RENDER_PLAN || "free";
       const serviceUrl = `https://${serviceName}.onrender.com`;
       const renderEnvVars = buildRenderEnvVars(envVars, serviceUrl);
+      const startCommand = await getNodeStartCommand(project);
+      if (!startCommand) {
+        await appendLog(
+          buildId,
+          "Render backend deployment skipped: no start script or server entry file found.",
+          "warn"
+        );
+        return null;
+      }
       await appendLog(buildId, `Creating new Render Web Service: ${serviceName} (${renderPlan} plan)`);
       const res = await api.post("/services", {
         type: "web_service",
@@ -434,7 +456,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
           plan: renderPlan,
           envSpecificDetails: {
             buildCommand: "npm install",
-            startCommand: project.packageJson.scripts?.start ? "npm start" : "node index.js",
+            startCommand,
           },
           envVars: renderEnvVars,
         },
