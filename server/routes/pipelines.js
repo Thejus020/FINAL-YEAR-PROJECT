@@ -448,6 +448,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
       const serviceUrl = `https://${serviceName}.onrender.com`;
       const renderEnvVars = buildRenderEnvVars(envVars, serviceUrl);
       const startCommand = await getNodeStartCommand(project);
+      const rootDir = getRenderRootDir(project);
       if (!startCommand) {
         await appendLog(
           buildId,
@@ -462,6 +463,8 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
         name: serviceName,
         ownerId,
         repo: normalizeRepoToHttps(pipeline.repo),
+        ...(rootDir ? { rootDir } : {}),
+        envVars: renderEnvVars,
         serviceDetails: {
           env: "node",
           plan: renderPlan,
@@ -469,7 +472,6 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
             buildCommand: "npm install",
             startCommand,
           },
-          envVars: renderEnvVars,
         },
       });
       const createdService = unwrapRenderService(res.data);
@@ -482,6 +484,7 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
     } else {
       // Trigger new deploy
       await appendLog(buildId, `🔄 Triggering existing Render service deployment (${serviceId})`);
+      await updateRenderServiceConfig(api, serviceId, pipeline, project);
       await api.post(`/services/${serviceId}/deploys`);
     }
 
@@ -510,6 +513,27 @@ async function deployToRender({ pipeline, buildId, project, envVars }) {
 
 function unwrapRenderService(payload) {
   return payload?.service || payload;
+}
+
+function getRenderRootDir(project) {
+  return project.relPath || null;
+}
+
+async function updateRenderServiceConfig(api, serviceId, pipeline, project) {
+  const startCommand = await getNodeStartCommand(project);
+  if (!startCommand) return;
+
+  const rootDir = getRenderRootDir(project);
+  await api.patch(`/services/${serviceId}`, {
+    repo: normalizeRepoToHttps(pipeline.repo),
+    ...(rootDir ? { rootDir } : {}),
+    serviceDetails: {
+      envSpecificDetails: {
+        buildCommand: "npm install",
+        startCommand,
+      },
+    },
+  });
 }
 
 function buildRenderEnvVars(pipelineEnvVars, serviceUrl) {
