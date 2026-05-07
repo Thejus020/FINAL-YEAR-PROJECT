@@ -559,7 +559,7 @@ async function deployToSurge({ pipeline, buildId, workDir, project }) {
   }
 
   const domain = `infraflow-${String(pipeline._id).slice(-8)}.surge.sh`;
-  await appendLog(buildId, `🚀 Deploying static assets to Surge: https://${domain}`);
+  await appendLog(buildId, `🚀 Deploying static assets to Surge: https://${domain}`, "success");
 
   try {
     await runCommand("npx", ["surge", deployPath, domain, "--token", surgeToken], workDir, (line) => {
