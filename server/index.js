@@ -9,6 +9,7 @@ const pipelineRoutes = require("./routes/pipelines");
 const buildRoutes = require("./routes/builds");
 const chatRoutes = require("./routes/chat");
 const streamRoutes = require("./routes/stream");
+const infrastructureRoutes = require("./routes/infrastructure");
 const { corsOriginCallback, origins } = require("./corsAllowlist");
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/pipelines", pipelineRoutes);
 app.use("/builds", buildRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/stream", streamRoutes);
+app.use("/api/infrastructure", infrastructureRoutes);
 
 app.get("/", (req, res) => {
   const list = origins();

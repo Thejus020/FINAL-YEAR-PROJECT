@@ -7,6 +7,7 @@ import PipelineDetail from "./pages/PipelineDetail";
 import BuildView from "./pages/BuildView";
 import AuthCallback from "./pages/AuthCallback";
 import Settings from "./pages/Settings";
+import InfrastructureDashboard from "./pages/InfrastructureDashboard";
 
 function ProtectedRoute({ children }) {
   const { user, token, loading } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/pipeline/:id" element={<ProtectedRoute><PipelineDetail /></ProtectedRoute>} />
           <Route path="/build/:id" element={<ProtectedRoute><BuildView /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/infrastructure" element={<ProtectedRoute><InfrastructureDashboard /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

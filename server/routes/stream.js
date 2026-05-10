@@ -75,6 +75,56 @@ function broadcastDone(buildId, status) {
   sseClients.delete(String(buildId));
 }
 
+// ── Infrastructure real-time metrics SSE ──────────────────────────────────────
+const { getMetrics } = require("../infrastructure/metricsCollector");
+
+const infraClients = new Set();
+
+router.get("/infrastructure", auth, async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", sseAllowOrigin(req));
+  res.flushHeaders();
+
+  infraClients.add(res);
+
+  // Send initial snapshot immediately
+  try {
+    const metrics = await getMetrics();
+    res.write(`data: ${JSON.stringify({ type: "metrics", ...metrics })}\n\n`);
+  } catch {}
+
+  // Heartbeat
+  const heartbeat = setInterval(() => {
+    res.write(`: ping\n\n`);
+  }, 20000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    infraClients.delete(res);
+  });
+});
+
+// Broadcast metrics to all infrastructure SSE clients every 3 seconds
+let infraInterval = null;
+function startInfraStreaming() {
+  if (infraInterval) return;
+  infraInterval = setInterval(async () => {
+    if (infraClients.size === 0) return;
+    try {
+      const metrics = await getMetrics();
+      const payload = JSON.stringify({ type: "metrics", ...metrics });
+      for (const client of infraClients) {
+        client.write(`data: ${payload}\n\n`);
+      }
+    } catch {}
+  }, 3000);
+}
+
+// Start streaming when module loads
+startInfraStreaming();
+
 module.exports = router;
 module.exports.broadcastLog = broadcastLog;
 module.exports.broadcastDone = broadcastDone;
