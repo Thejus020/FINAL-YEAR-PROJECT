@@ -142,25 +142,14 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
     await Pipeline.findByIdAndUpdate(pipeline._id, { status: "success", deployedUrls: finalUrls });
     await appendLogFunc(build._id, "🎉 Full-stack pipeline finished successfully", "success");
 
-    // Post-deployment: show deployed URLs and config instructions
-    if (finalUrls.length > 0) {
-      const backendEntry = finalUrls.find((u) => u.label === "Backend API");
-      const frontendEntry = finalUrls.find((u) => u.label === "Frontend UI");
-
-      const credentials = [];
-      finalUrls.forEach((u) => {
-        credentials.push({ label: u.label, value: u.url });
-      });
-      if (backendEntry) {
-        credentials.push({ label: "GitHub OAuth Callback URL", value: `${backendEntry.url}/auth/github/callback` });
-        credentials.push({ label: "Homepage URL", value: backendEntry.url });
-      }
-      if (frontendEntry) {
-        credentials.push({ label: "Client URL (CORS / Redirects)", value: frontendEntry.url });
-      }
-      credentials.push({ label: "GitHub Developer Settings", value: "https://github.com/settings/developers" });
-
-      await appendLogFunc(build._id, JSON.stringify(credentials), "config");
+    // Post-deployment config notice (only if a backend was deployed)
+    if (backendUrl) {
+      const callbackUrl = `${backendUrl}/auth/github/callback`;
+      await appendLogFunc(build._id, `⚙️  POST-DEPLOYMENT CONFIGURATION`, "config");
+      await appendLogFunc(build._id, `If your app uses GitHub OAuth, update your GitHub OAuth App:`, "config");
+      await appendLogFunc(build._id, `Authorization callback URL → ${callbackUrl}`, "config");
+      await appendLogFunc(build._id, `Homepage URL → ${backendUrl}`, "config");
+      await appendLogFunc(build._id, `Go to: https://github.com/settings/developers`, "config");
     }
 
     broadcastDone(String(build._id), "success");

@@ -9,7 +9,7 @@ const levelColor = {
   success: "text-green-400",
   error: "text-red-400",
   warn: "text-yellow-400",
-  config: "text-cyan-300",
+  config: "text-amber-300",
 };
 
 function formatDuration(ms) {
@@ -228,73 +228,21 @@ export default function BuildView() {
                 <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                log.level === "config" ? (() => {
-                  let creds = [];
-                  try { creds = JSON.parse(log.message); } catch { creds = []; }
-                  const allText = creds.map((c) => `${c.label}: ${c.value}`).join("\n");
-                  return (
-                  <div key={i} className="my-6 mx-0 relative">
-                    {/* Animated glowing border */}
-                    <div className="absolute -inset-[1px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 rounded-2xl opacity-70 blur-[2px] animate-pulse" />
-                    <div className="relative bg-[#070d1a] border border-cyan-400/40 rounded-2xl p-6 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-lg shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-                            ⚙️
-                          </div>
-                          <div>
-                            <div className="text-base font-black text-white tracking-wide">
-                              Deployment Credentials
-                            </div>
-                            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
-                              Click any row to copy individually
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Individual credential rows */}
-                      <div className="space-y-2">
-                        {creds.map((cred, ci) => (
-                          <div
-                            key={ci}
-                            className="group flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-cyan-500/30 rounded-xl px-4 py-3 transition-all duration-200 cursor-pointer"
-                            onClick={() => {
-                              navigator.clipboard.writeText(cred.value);
-                            }}
-                          >
-                            <div className="flex-1 min-w-0 mr-3">
-                              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
-                                {cred.label}
-                              </div>
-                              <div className="text-sm text-slate-100 font-mono truncate select-all">
-                                {cred.value}
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(cred.value);
-                              }}
-                              className="shrink-0 text-[10px] font-bold text-slate-500 group-hover:text-cyan-400 bg-white/5 group-hover:bg-cyan-500/10 border border-white/10 group-hover:border-cyan-500/30 px-3 py-1.5 rounded-lg transition-all"
-                            >
-                              📋 Copy
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })()
-                ) : (
-                  <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
-                    <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
-                    </span>
-                    <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
-                  </div>
-                )
+                <div
+                  key={i}
+                  className={`flex gap-3 rounded px-2 py-0.5 -mx-2 ${
+                    log.level === "config"
+                      ? "bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2.5 my-1"
+                      : "hover:bg-white/5"
+                  } ${levelColor[log.level] || "text-slate-300"}`}
+                >
+                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
+                  </span>
+                  <span className={`break-words whitespace-pre-wrap flex-1 leading-relaxed ${
+                    log.level === "config" ? "text-sm font-bold" : ""
+                  }`}>{log.message}</span>
+                </div>
               ))}
               {streaming && (
                 <div className="flex gap-3 text-cyan-500">
