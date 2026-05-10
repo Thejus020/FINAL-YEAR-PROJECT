@@ -145,17 +145,6 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
       throw new Error(`Render service ${serviceId} did not include a public URL yet.`);
     }
     await appendLogFunc(buildId, `🌐 Backend is live at: ${url}`, "success");
-
-    // Post-deployment: remind user about GitHub OAuth callback URL
-    const callbackUrl = `${url}/auth/github/callback`;
-    await appendLogFunc(buildId, `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "info");
-    await appendLogFunc(buildId, `⚙️  POST-DEPLOYMENT CONFIGURATION`, "info");
-    await appendLogFunc(buildId, `If your app uses GitHub OAuth, update your GitHub OAuth App settings:`, "info");
-    await appendLogFunc(buildId, `   → Authorization callback URL: ${callbackUrl}`, "info");
-    await appendLogFunc(buildId, `   → Homepage URL: ${url}`, "info");
-    await appendLogFunc(buildId, `   Go to: https://github.com/settings/developers`, "info");
-    await appendLogFunc(buildId, `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "info");
-
     return url;
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
