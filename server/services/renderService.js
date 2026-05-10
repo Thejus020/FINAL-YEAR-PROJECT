@@ -16,7 +16,7 @@ function buildRenderEnvVars(pipelineEnvVars, serviceUrl) {
   const merged = {
     NODE_VERSION: process.env.NODE_VERSION || "20",
     SERVER_URL: serviceUrl,
-    GITHUB_CALLBACK_URL: \`${serviceUrl}/auth/github/callback\`,
+    GITHUB_CALLBACK_URL: `${serviceUrl}/auth/github/callback`,
   };
 
   const forwardedKeys = [
@@ -45,7 +45,7 @@ async function updateRenderServiceConfig(api, serviceId, pipeline, project) {
   if (!startCommand) return;
 
   const rootDir = getRenderRootDir(project);
-  await api.patch(\`/services/${serviceId}\`, {
+  await api.patch(`/services/${serviceId}`, {
     repo: normalizeRepoToHttps(pipeline.repo),
     ...(rootDir ? { rootDir } : {}),
     serviceDetails: {
@@ -66,12 +66,12 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
     return null;
   }
 
-  await appendLogFunc(buildId, \`🚀 Orchestrating backend deployment to Render...\`);
+  await appendLogFunc(buildId, `🚀 Orchestrating backend deployment to Render...`);
 
   try {
     const api = axios.create({
       baseURL: "https://api.render.com/v1",
-      headers: { Authorization: \`Bearer ${apiKey}\`, Accept: "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
     });
 
     let serviceId = pipeline.renderServiceId;
@@ -79,9 +79,9 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
     if (!serviceId) {
       // Create new service
       const randomSuffix = crypto.randomBytes(3).toString("hex");
-      const serviceName = \`${pipeline.name}-backend-${randomSuffix}\`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+      const serviceName = `${pipeline.name}-backend-${randomSuffix}`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
       const renderPlan = process.env.RENDER_PLAN || "free";
-      const serviceUrl = \`https://${serviceName}.onrender.com\`;
+      const serviceUrl = `https://${serviceName}.onrender.com`;
       const renderEnvVars = buildRenderEnvVars(envVars, serviceUrl);
       const startCommand = await getNodeStartCommand(project);
       const rootDir = getRenderRootDir(project);
@@ -91,7 +91,7 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
         return null;
       }
       
-      await appendLogFunc(buildId, \`Creating new Render Web Service: ${serviceName} (${renderPlan} plan)\`);
+      await appendLogFunc(buildId, `Creating new Render Web Service: ${serviceName} (${renderPlan} plan)`);
       
       const res = await api.post("/services", {
         type: "web_service",
@@ -113,37 +113,37 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
       const createdService = unwrapRenderService(res.data);
       serviceId = createdService?.id;
       if (!serviceId) {
-        throw new Error(\`Render service creation returned no service id: ${JSON.stringify(res.data)}\`);
+        throw new Error(`Render service creation returned no service id: ${JSON.stringify(res.data)}`);
       }
       
       await Pipeline.findByIdAndUpdate(pipeline._id, { renderServiceId: serviceId });
     } else {
       // Trigger new deploy
-      await appendLogFunc(buildId, \`🔄 Triggering existing Render service deployment (${serviceId})\`);
+      await appendLogFunc(buildId, `🔄 Triggering existing Render service deployment (${serviceId})`);
       await updateRenderServiceConfig(api, serviceId, pipeline, project);
-      await api.post(\`/services/${serviceId}/deploys\`);
+      await api.post(`/services/${serviceId}/deploys`);
     }
 
     // Get the URL
-    const serviceRes = await api.get(\`/services/${serviceId}\`);
+    const serviceRes = await api.get(`/services/${serviceId}`);
     const service = unwrapRenderService(serviceRes.data);
     const url = service?.serviceDetails?.url || service?.url;
     if (!url) {
-      throw new Error(\`Render service ${serviceId} did not include a public URL yet.\`);
+      throw new Error(`Render service ${serviceId} did not include a public URL yet.`);
     }
-    await appendLogFunc(buildId, \`🌐 Backend is live at: ${url}\`, "success");
+    await appendLogFunc(buildId, `🌐 Backend is live at: ${url}`, "success");
     return url;
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
     if (/payment information|billing|add a card/i.test(msg)) {
       await appendLogFunc(
         buildId,
-        \`Render deployment skipped: ${msg}. Add billing in Render, remove Render env vars, or use an existing renderServiceId to deploy backend.\`,
+        `Render deployment skipped: ${msg}. Add billing in Render, remove Render env vars, or use an existing renderServiceId to deploy backend.`,
         "warn"
       );
       return null;
     }
-    throw new Error(\`Render deployment failed: ${msg}\`);
+    throw new Error(`Render deployment failed: ${msg}`);
   }
 }
 
