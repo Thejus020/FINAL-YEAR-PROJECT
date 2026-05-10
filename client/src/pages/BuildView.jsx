@@ -9,7 +9,6 @@ const levelColor = {
   success: "text-green-400",
   error: "text-red-400",
   warn: "text-yellow-400",
-  config: "text-cyan-300",
 };
 
 function formatDuration(ms) {
@@ -228,33 +227,12 @@ export default function BuildView() {
                 <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                log.level === "config" ? (
-                  <div key={i} className="my-4 mx-1 bg-gradient-to-br from-cyan-500/10 to-indigo-500/5 border border-cyan-500/30 rounded-2xl p-5 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
-                        Deployment Credentials
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(log.message);
-                          alert("Credentials copied to clipboard!");
-                        }}
-                        className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded-lg transition-all"
-                      >
-                        📋 Copy
-                      </button>
-                    </div>
-                    <pre className="text-sm text-slate-200 font-mono whitespace-pre-wrap leading-relaxed select-all">{log.message}</pre>
-                  </div>
-                ) : (
-                  <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
-                    <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
-                    </span>
-                    <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
-                  </div>
-                )
+                <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
+                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
+                  </span>
+                  <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
+                </div>
               ))}
               {streaming && (
                 <div className="flex gap-3 text-cyan-500">
