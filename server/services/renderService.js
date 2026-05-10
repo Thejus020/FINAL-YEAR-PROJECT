@@ -118,10 +118,23 @@ async function deployToRender({ pipeline, buildId, project, envVars, appendLogFu
       
       await Pipeline.findByIdAndUpdate(pipeline._id, { renderServiceId: serviceId });
     } else {
-      // Trigger new deploy
-      await appendLogFunc(buildId, `🔄 Triggering existing Render service deployment (${serviceId})`);
-      await updateRenderServiceConfig(api, serviceId, pipeline, project);
-      await api.post(`/services/${serviceId}/deploys`);
+      // Trigger new deploy on existing service
+      try {
+        await appendLogFunc(buildId, `🔄 Triggering existing Render service deployment (${serviceId})`);
+        await updateRenderServiceConfig(api, serviceId, pipeline, project);
+        await api.post(`/services/${serviceId}/deploys`);
+      } catch (existingErr) {
+        const status = existingErr.response?.status;
+        if (status === 404) {
+          // Service was deleted on Render — clear stale ID and create a new one
+          await appendLogFunc(buildId, `⚠️ Render service ${serviceId} no longer exists. Clearing stale ID and creating a new service...`, "warn");
+          await Pipeline.findByIdAndUpdate(pipeline._id, { $unset: { renderServiceId: "" } });
+          // Retry with a fresh pipeline object (no renderServiceId)
+          const refreshedPipeline = await Pipeline.findById(pipeline._id);
+          return deployToRender({ pipeline: refreshedPipeline, buildId, project, envVars, appendLogFunc });
+        }
+        throw existingErr;
+      }
     }
 
     // Get the URL
