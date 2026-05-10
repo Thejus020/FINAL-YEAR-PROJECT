@@ -227,7 +227,14 @@ export default function BuildView() {
                 <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
+                <div
+                  key={i}
+                  className={`flex gap-3 rounded px-2 py-0.5 -mx-2 ${
+                    log.level === "success"
+                      ? "bg-emerald-500/10 border-l-2 border-emerald-400 pl-4 py-2 my-1 shadow-[0_0_15px_rgba(16,185,129,0.08)] text-emerald-300 text-sm font-bold"
+                      : `hover:bg-white/5 ${levelColor[log.level] || "text-slate-300"}`
+                  }`}
+                >
                   <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
                     {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
                   </span>
