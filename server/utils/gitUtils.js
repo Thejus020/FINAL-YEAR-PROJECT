@@ -18,7 +18,7 @@ function normalizeRepoToHttps(repo) {
   if (trimmed.startsWith("git@github.com:")) {
     return `https://github.com/${trimmed.replace("git@github.com:", "")}`;
   }
-  if (/^[\\w.-]+\\/[\\w.-]+$/.test(trimmed)) return `https://github.com/${trimmed}.git`;
+  if (/^[\w.-]+\/[\w.-]+$/.test(trimmed)) return `https://github.com/${trimmed}.git`;
   return trimmed;
 }
 
@@ -38,21 +38,21 @@ function withGithubToken(repoUrl, token) {
 async function detectDefaultBranch(repoUrl, cwd) {
   const { stdout } = await runCommandCapture("git", ["ls-remote", "--symref", repoUrl, "HEAD"], cwd);
   const line = stdout
-    .split(/\\r?\\n/)
-    .find((l) => l.startsWith("ref: refs/heads/") && l.endsWith("\\tHEAD"));
+    .split(/\r?\n/)
+    .find((l) => l.startsWith("ref: refs/heads/") && l.endsWith("\tHEAD"));
   if (!line) return null;
-  return line.replace("ref: refs/heads/", "").replace("\\tHEAD", "").trim();
+  return line.replace("ref: refs/heads/", "").replace("\tHEAD", "").trim();
 }
 
 async function createGithubWebhook(userToken, pipelineId, repoUrl, secret, serverUrl) {
   try {
     const normalized = normalizeRepoToHttps(repoUrl);
-    const match = normalized.match(/github\\.com\\/([^/]+)\\/([^/.]+)/);
+    const match = normalized.match(/github\.com\/([^/]+)\/([^/.]+)/);
     if (!match) return;
 
     const owner = match[1];
     const repo = match[2];
-    const webhookUrl = `${serverUrl.replace(/\\/$/, "")}/pipelines/${pipelineId}/webhook`;
+    const webhookUrl = `${serverUrl.replace(/\/$/, "")}/pipelines/${pipelineId}/webhook`;
 
     await axios.post(
       `https://api.github.com/repos/${owner}/${repo}/hooks`,
