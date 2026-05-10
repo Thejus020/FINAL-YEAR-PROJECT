@@ -44,7 +44,7 @@ router.post("/", auth, async (req, res) => {
 
     const user = await User.findById(req.user._id);
     if (user?.accessToken && repo.includes("github.com")) {
-      const serverUrl = process.env.SERVER_URL || \`\${req.protocol}://\${req.get("host")}\`;
+      const serverUrl = process.env.SERVER_URL || \`${req.protocol}://${req.get("host")}\`;
       createGithubWebhook(user.accessToken, pipeline._id, repo, pipeline.webhookSecret, serverUrl);
     }
 
@@ -135,7 +135,7 @@ router.post("/:id/webhook", async (req, res) => {
 
     const pushedBranch = req.body?.ref?.replace("refs/heads/", "");
     if (pushedBranch && pushedBranch !== pipeline.branch) {
-      return res.json({ message: \`Ignored push to \${pushedBranch}, watching \${pipeline.branch}\` });
+      return res.json({ message: \`Ignored push to ${pushedBranch}, watching ${pipeline.branch}\` });
     }
 
     const build = await Build.create({
@@ -163,7 +163,7 @@ router.post("/:id/jenkins", auth, async (req, res) => {
     const { JENKINS_URL, JENKINS_USER, JENKINS_TOKEN, JENKINS_JOB } = process.env;
     if (!JENKINS_URL) return res.status(400).json({ error: "Jenkins not configured" });
 
-    const url = \`\${JENKINS_URL}/job/\${JENKINS_JOB}/build\`;
+    const url = \`${JENKINS_URL}/job/${JENKINS_JOB}/build\`;
     const response = await axios.post(url, null, {
       auth: { username: JENKINS_USER, password: JENKINS_TOKEN },
       validateStatus: (s) => s < 400 || s === 201,

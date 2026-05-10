@@ -4,7 +4,7 @@ const { runCommandCapture } = require("./execUtils");
 
 function isValidGithubSignature(rawBody, signatureHeader, secret) {
   if (!rawBody || !signatureHeader || !secret) return false;
-  const expected = `sha256=\${crypto.createHmac("sha256", secret).update(rawBody).digest("hex")}`;
+  const expected = `sha256=${crypto.createHmac("sha256", secret).update(rawBody).digest("hex")}`;
   const expectedBuf = Buffer.from(expected);
   const actualBuf = Buffer.from(String(signatureHeader));
   if (expectedBuf.length !== actualBuf.length) return false;
@@ -16,9 +16,9 @@ function normalizeRepoToHttps(repo) {
   const trimmed = repo.trim();
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
   if (trimmed.startsWith("git@github.com:")) {
-    return `https://github.com/\${trimmed.replace("git@github.com:", "")}`;
+    return `https://github.com/${trimmed.replace("git@github.com:", "")}`;
   }
-  if (/^[\\w.-]+\\/[\\w.-]+$/.test(trimmed)) return `https://github.com/\${trimmed}.git`;
+  if (/^[\\w.-]+\\/[\\w.-]+$/.test(trimmed)) return `https://github.com/${trimmed}.git`;
   return trimmed;
 }
 
@@ -52,10 +52,10 @@ async function createGithubWebhook(userToken, pipelineId, repoUrl, secret, serve
 
     const owner = match[1];
     const repo = match[2];
-    const webhookUrl = `\${serverUrl.replace(/\\/$/, "")}/pipelines/\${pipelineId}/webhook`;
+    const webhookUrl = `${serverUrl.replace(/\\/$/, "")}/pipelines/${pipelineId}/webhook`;
 
     await axios.post(
-      `https://api.github.com/repos/\${owner}/\${repo}/hooks`,
+      `https://api.github.com/repos/${owner}/${repo}/hooks`,
       {
         name: "web",
         active: true,
@@ -69,15 +69,15 @@ async function createGithubWebhook(userToken, pipelineId, repoUrl, secret, serve
       },
       {
         headers: {
-          Authorization: `token \${userToken}`,
+          Authorization: `token ${userToken}`,
           Accept: "application/vnd.github.v3+json",
         },
       }
     );
-    console.log(`✅ GitHub Webhook automatically created for \${owner}/\${repo}`);
+    console.log(`✅ GitHub Webhook automatically created for ${owner}/${repo}`);
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
-    console.error(`⚠️ GitHub Webhook auto-creation skipped/failed: \${msg}`);
+    console.error(`⚠️ GitHub Webhook auto-creation skipped/failed: ${msg}`);
   }
 }
 

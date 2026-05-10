@@ -13,17 +13,17 @@ const { deployToSurge } = require("./surgeService");
 
 async function runRealBuild(pipeline, build, appendLogFunc) {
   const workRoot = path.join(os.tmpdir(), "infraflow-builds");
-  const workDir = path.join(workRoot, \`\${pipeline._id}-\${build._id}\`);
+  const workDir = path.join(workRoot, \`${pipeline._id}-${build._id}\`);
 
   try {
     await fs.mkdir(workRoot, { recursive: true });
-    await appendLogFunc(build._id, \`🔗 Starting full-stack pipeline for \${pipeline.repo} (\${pipeline.branch})\`);
+    await appendLogFunc(build._id, \`🔗 Starting full-stack pipeline for ${pipeline.repo} (${pipeline.branch})\`);
 
     const owner = await User.findById(pipeline.owner).select("accessToken");
     const normalizedRepo = normalizeRepoToHttps(pipeline.repo);
     const cloneUrl = withGithubToken(normalizedRepo, owner?.accessToken);
 
-    await appendLogFunc(build._id, \`📦 Cloning repository (branch: \${pipeline.branch})\`);
+    await appendLogFunc(build._id, \`📦 Cloning repository (branch: ${pipeline.branch})\`);
     try {
       await runCommand(
         "git",
@@ -34,10 +34,10 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
     } catch (cloneErr) {
       const message = cloneErr?.message || "";
       if (/Remote branch .* not found/i.test(message)) {
-        await appendLogFunc(build._id, \`⚠️ Branch '\${pipeline.branch}' not found. Detecting repository default branch...\`, "warn");
+        await appendLogFunc(build._id, \`⚠️ Branch '${pipeline.branch}' not found. Detecting repository default branch...\`, "warn");
         const defaultBranch = await detectDefaultBranch(cloneUrl, workRoot);
         if (!defaultBranch) throw cloneErr;
-        await appendLogFunc(build._id, \`🔁 Falling back to default branch '\${defaultBranch}'\`, "warn");
+        await appendLogFunc(build._id, \`🔁 Falling back to default branch '${defaultBranch}'\`, "warn");
         await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
         await runCommand(
           "git",
@@ -82,7 +82,7 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
       } else {
       const dockerUser = process.env.DOCKER_USERNAME;
       const dockerPass = process.env.DOCKER_PASSWORD;
-      const imageName = \`\${dockerUser || "local"}/\${pipeline.name.toLowerCase()}:\${build._id}\`;
+      const imageName = \`${dockerUser || "local"}/${pipeline.name.toLowerCase()}:${build._id}\`;
 
       try {
         if (dockerUser && dockerPass) {
@@ -95,16 +95,16 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
         }
 
         await runCommand("docker", ["build", "-t", imageName, "."], workDir, (line) => appendLogFunc(build._id, line));
-        await appendLogFunc(build._id, \`✅ Docker image built: \${imageName}\`, "success");
+        await appendLogFunc(build._id, \`✅ Docker image built: ${imageName}\`, "success");
 
         if (dockerUser && dockerPass) {
           await appendLogFunc(build._id, \`⬆️ Pushing image to Docker Hub...\`);
           await runCommand("docker", ["push", imageName], workDir, (line) => appendLogFunc(build._id, line));
           await appendLogFunc(build._id, \`✅ Image pushed successfully\`, "success");
-          finalUrls.push({ label: "Docker Image", url: \`https://hub.docker.com/r/\${dockerUser}/\${pipeline.name.toLowerCase()}\` });
+          finalUrls.push({ label: "Docker Image", url: \`https://hub.docker.com/r/${dockerUser}/${pipeline.name.toLowerCase()}\` });
         }
       } catch (dockerErr) {
-        await appendLogFunc(build._id, \`Docker Build/Push skipped after failure: \${dockerErr.message}\`, "warn");
+        await appendLogFunc(build._id, \`Docker Build/Push skipped after failure: ${dockerErr.message}\`, "warn");
       }
       }
     }
@@ -112,18 +112,18 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
     // 1. Deploy Backend First
     let backendUrl = null;
     if (backend) {
-      await appendLogFunc(build._id, \`📦 Found backend in: /\${backend.relPath || "root"}\`);
+      await appendLogFunc(build._id, \`📦 Found backend in: /${backend.relPath || "root"}\`);
       backendUrl = await deployToRender({ pipeline, buildId: build._id, project: backend, envVars: baseEnv, appendLogFunc });
       if (backendUrl) finalUrls.push({ label: "Backend API", url: backendUrl });
     }
 
     // 2. Build and Deploy Frontend
     if (frontend) {
-      await appendLogFunc(build._id, \`📦 Found frontend in: /\${frontend.relPath || "root"}\`);
+      await appendLogFunc(build._id, \`📦 Found frontend in: /${frontend.relPath || "root"}\`);
       const frontendEnv = { ...baseEnv };
       if (backendUrl) {
         frontendEnv["VITE_API_URL"] = backendUrl;
-        await appendLogFunc(build._id, \`🔗 Auto-linking frontend to backend: VITE_API_URL=\${backendUrl}\`);
+        await appendLogFunc(build._id, \`🔗 Auto-linking frontend to backend: VITE_API_URL=${backendUrl}\`);
       }
 
       await runCommand("npm", ["install", "--include=dev"], frontend.dir, (line, level) => appendLogFunc(build._id, line, level), { env: frontendEnv });
@@ -145,7 +145,7 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
   } catch (err) {
     const finishedAt = new Date();
     const duration = finishedAt - build.startedAt;
-    await appendLogFunc(build._id, \`❌ Pipeline failed: \${err.message}\`, "error");
+    await appendLogFunc(build._id, \`❌ Pipeline failed: ${err.message}\`, "error");
     await Build.findByIdAndUpdate(build._id, { status: "failed", finishedAt, duration });
     await Pipeline.findByIdAndUpdate(pipeline._id, { status: "failed" });
     broadcastDone(String(build._id), "failed");

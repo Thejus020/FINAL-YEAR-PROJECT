@@ -20,7 +20,7 @@ async function getNodeStartCommand(project) {
 
   const entries = ["index.js", "server.js", "app.js", "src/index.js", "src/server.js", "src/app.js"];
   for (const entry of entries) {
-    if (await pathExists(path.join(project.dir, entry))) return \`node \${entry}\`;
+    if (await pathExists(path.join(project.dir, entry))) return \`node ${entry}\`;
   }
 
   return null;
@@ -34,7 +34,7 @@ async function restoreNodeBinExecutables(projectDir, appendLogFunc, buildId) {
     await runCommandCapture("chmod", ["-R", "u+x", binDir], projectDir, { timeoutMs: 10000 });
   } catch (err) {
     if (appendLogFunc) {
-      await appendLogFunc(buildId, \`Could not update node_modules/.bin permissions: \${err.message}\`, "warn");
+      await appendLogFunc(buildId, \`Could not update node_modules/.bin permissions: ${err.message}\`, "warn");
     }
   }
 }

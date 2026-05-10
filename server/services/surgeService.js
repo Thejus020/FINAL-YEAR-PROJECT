@@ -20,17 +20,17 @@ async function deployToSurge({ pipeline, buildId, workDir, project, appendLogFun
     return null;
   }
 
-  const domain = \`infraflow-\${String(pipeline._id).slice(-8)}.surge.sh\`;
-  await appendLogFunc(buildId, \`🚀 Deploying static assets to Surge: https://\${domain}\`, "success");
+  const domain = \`infraflow-${String(pipeline._id).slice(-8)}.surge.sh\`;
+  await appendLogFunc(buildId, \`🚀 Deploying static assets to Surge: https://${domain}\`, "success");
 
   try {
     await runCommand("npx", ["surge", deployPath, domain, "--token", surgeToken], workDir, (line) => {
       const safeLine = line.replace(new RegExp(surgeToken, "g"), "***");
       appendLogFunc(buildId, safeLine);
     });
-    return \`https://\${domain}\`;
+    return \`https://${domain}\`;
   } catch (err) {
-    throw new Error(\`Surge deployment failed: \${err.message}\`);
+    throw new Error(\`Surge deployment failed: ${err.message}\`);
   }
 }
 
