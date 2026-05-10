@@ -147,20 +147,20 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
       const backendEntry = finalUrls.find((u) => u.label === "Backend API");
       const frontendEntry = finalUrls.find((u) => u.label === "Frontend UI");
 
-      let configBlock = "⚙️ DEPLOYMENT CREDENTIALS\n";
+      const credentials = [];
       finalUrls.forEach((u) => {
-        configBlock += `${u.label}: ${u.url}\n`;
+        credentials.push({ label: u.label, value: u.url });
       });
       if (backendEntry) {
-        configBlock += `\nGitHub OAuth Callback URL:\n${backendEntry.url}/auth/github/callback\n`;
-        configBlock += `\nHomepage URL:\n${backendEntry.url}\n`;
+        credentials.push({ label: "GitHub OAuth Callback URL", value: `${backendEntry.url}/auth/github/callback` });
+        credentials.push({ label: "Homepage URL", value: backendEntry.url });
       }
       if (frontendEntry) {
-        configBlock += `\nClient URL (for CORS / redirects):\n${frontendEntry.url}\n`;
+        credentials.push({ label: "Client URL (CORS / Redirects)", value: frontendEntry.url });
       }
-      configBlock += `\n→ Update at: https://github.com/settings/developers`;
+      credentials.push({ label: "GitHub Developer Settings", value: "https://github.com/settings/developers" });
 
-      await appendLogFunc(build._id, configBlock, "config");
+      await appendLogFunc(build._id, JSON.stringify(credentials), "config");
     }
 
     broadcastDone(String(build._id), "success");

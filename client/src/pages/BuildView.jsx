@@ -228,7 +228,11 @@ export default function BuildView() {
                 <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                log.level === "config" ? (
+                log.level === "config" ? (() => {
+                  let creds = [];
+                  try { creds = JSON.parse(log.message); } catch { creds = []; }
+                  const allText = creds.map((c) => `${c.label}: ${c.value}`).join("\n");
+                  return (
                   <div key={i} className="my-6 mx-0 relative">
                     {/* Animated glowing border */}
                     <div className="absolute -inset-[1px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 rounded-2xl opacity-70 blur-[2px] animate-pulse" />
@@ -244,24 +248,54 @@ export default function BuildView() {
                               Deployment Credentials
                             </div>
                             <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
-                              Copy & paste into your GitHub OAuth App
+                              Click any row to copy individually
                             </div>
                           </div>
                         </div>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(log.message);
-                            alert("Credentials copied to clipboard!");
+                            navigator.clipboard.writeText(allText);
+                            alert("All credentials copied!");
                           }}
                           className="flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 px-5 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:scale-105"
                         >
                           📋 Copy All
                         </button>
                       </div>
-                      {/* Credentials body */}
-                      <pre className="text-[13px] text-slate-100 font-mono whitespace-pre-wrap leading-[1.8] select-all bg-white/[0.03] border border-white/5 rounded-xl p-4">{log.message}</pre>
+                      {/* Individual credential rows */}
+                      <div className="space-y-2">
+                        {creds.map((cred, ci) => (
+                          <div
+                            key={ci}
+                            className="group flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-cyan-500/30 rounded-xl px-4 py-3 transition-all duration-200 cursor-pointer"
+                            onClick={() => {
+                              navigator.clipboard.writeText(cred.value);
+                            }}
+                          >
+                            <div className="flex-1 min-w-0 mr-3">
+                              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
+                                {cred.label}
+                              </div>
+                              <div className="text-sm text-slate-100 font-mono truncate select-all">
+                                {cred.value}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(cred.value);
+                              }}
+                              className="shrink-0 text-[10px] font-bold text-slate-500 group-hover:text-cyan-400 bg-white/5 group-hover:bg-cyan-500/10 border border-white/10 group-hover:border-cyan-500/30 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              📋 Copy
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  );
+                })()
                 ) : (
                   <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
                     <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
