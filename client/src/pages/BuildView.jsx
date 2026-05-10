@@ -252,15 +252,6 @@ export default function BuildView() {
                             </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(allText);
-                            alert("All credentials copied!");
-                          }}
-                          className="flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 px-5 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:scale-105"
-                        >
-                          📋 Copy All
-                        </button>
                       </div>
                       {/* Individual credential rows */}
                       <div className="space-y-2">
