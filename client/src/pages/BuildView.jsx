@@ -9,6 +9,7 @@ const levelColor = {
   success: "text-green-400",
   error: "text-red-400",
   warn: "text-yellow-400",
+  config: "text-cyan-300",
 };
 
 function formatDuration(ms) {
@@ -227,19 +228,48 @@ export default function BuildView() {
                 <span className="text-slate-600 italic">Waiting for build to start...</span>
               )}
               {logs.map((log, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-3 rounded px-2 py-0.5 -mx-2 ${
-                    log.level === "success"
-                      ? "bg-emerald-500/10 border-l-2 border-emerald-400 pl-4 py-2 my-1 shadow-[0_0_15px_rgba(16,185,129,0.08)] text-emerald-300 text-sm font-bold"
-                      : `hover:bg-white/5 ${levelColor[log.level] || "text-slate-300"}`
-                  }`}
-                >
-                  <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
-                    {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
-                  </span>
-                  <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
-                </div>
+                log.level === "config" ? (
+                  <div key={i} className="my-6 mx-0 relative">
+                    {/* Animated glowing border */}
+                    <div className="absolute -inset-[1px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 rounded-2xl opacity-70 blur-[2px] animate-pulse" />
+                    <div className="relative bg-[#070d1a] border border-cyan-400/40 rounded-2xl p-6 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-lg shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                            ⚙️
+                          </div>
+                          <div>
+                            <div className="text-base font-black text-white tracking-wide">
+                              Deployment Credentials
+                            </div>
+                            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
+                              Copy & paste into your GitHub OAuth App
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(log.message);
+                            alert("Credentials copied to clipboard!");
+                          }}
+                          className="flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 px-5 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:scale-105"
+                        >
+                          📋 Copy All
+                        </button>
+                      </div>
+                      {/* Credentials body */}
+                      <pre className="text-[13px] text-slate-100 font-mono whitespace-pre-wrap leading-[1.8] select-all bg-white/[0.03] border border-white/5 rounded-xl p-4">{log.message}</pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className={`flex gap-3 hover:bg-white/5 rounded px-2 py-0.5 -mx-2 ${levelColor[log.level] || "text-slate-300"}`}>
+                    <span className="text-slate-600 select-none w-16 md:w-20 shrink-0 text-[10px] md:text-xs pt-0.5 opacity-60 border-r border-white/5 mr-1 overflow-hidden">
+                      {new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}
+                    </span>
+                    <span className="break-words whitespace-pre-wrap flex-1 leading-relaxed">{log.message}</span>
+                  </div>
+                )
               ))}
               {streaming && (
                 <div className="flex gap-3 text-cyan-500">

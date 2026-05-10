@@ -141,6 +141,28 @@ async function runRealBuild(pipeline, build, appendLogFunc) {
     await Build.findByIdAndUpdate(build._id, { status: "success", finishedAt, duration });
     await Pipeline.findByIdAndUpdate(pipeline._id, { status: "success", deployedUrls: finalUrls });
     await appendLogFunc(build._id, "🎉 Full-stack pipeline finished successfully", "success");
+
+    // Post-deployment: show deployed URLs and config instructions
+    if (finalUrls.length > 0) {
+      const backendEntry = finalUrls.find((u) => u.label === "Backend API");
+      const frontendEntry = finalUrls.find((u) => u.label === "Frontend UI");
+
+      let configBlock = "⚙️ DEPLOYMENT CREDENTIALS\n";
+      finalUrls.forEach((u) => {
+        configBlock += `${u.label}: ${u.url}\n`;
+      });
+      if (backendEntry) {
+        configBlock += `\nGitHub OAuth Callback URL:\n${backendEntry.url}/auth/github/callback\n`;
+        configBlock += `\nHomepage URL:\n${backendEntry.url}\n`;
+      }
+      if (frontendEntry) {
+        configBlock += `\nClient URL (for CORS / redirects):\n${frontendEntry.url}\n`;
+      }
+      configBlock += `\n→ Update at: https://github.com/settings/developers`;
+
+      await appendLogFunc(build._id, configBlock, "config");
+    }
+
     broadcastDone(String(build._id), "success");
   } catch (err) {
     const finishedAt = new Date();

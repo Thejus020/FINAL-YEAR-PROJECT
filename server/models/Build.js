@@ -11,7 +11,7 @@ const buildSchema = new mongoose.Schema(
     logs: [
       {
         message: String,
-        level: { type: String, enum: ["info", "success", "error", "warn"], default: "info" },
+        level: { type: String, enum: ["info", "success", "error", "warn", "config"], default: "info" },
         timestamp: { type: Date, default: Date.now },
       },
     ],
