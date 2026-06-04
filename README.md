@@ -1,19 +1,76 @@
-# ⚡ InfraFlow — Automated CI/CD Pipeline Platform
+# ⚡ InfraFlow — Automated CI/CD & Infrastructure Platform
+
+A premium, full-stack CI/CD pipeline platform with real-time build streaming, multi-target deployment orchestration, infrastructure monitoring, and an AI-powered assistant — all wrapped in a deep-space glassmorphism UI.
+
+## ✨ Key Features
+
+- **GitHub OAuth** — one-click sign-in via GitHub
+- **Pipeline Management** — create, configure, and trigger CI/CD pipelines from any GitHub repo
+- **Full-Stack Auto-Detection** — automatically identifies frontend vs backend projects in a repo
+- **Multi-Target Deployment** — orchestrates deploys to **Render** (backend), **Surge** (frontend static), and **Docker Hub** (containers)
+- **Real-Time Build Streaming** — SSE-powered live log output during builds
+- **GitHub Webhooks** — auto-trigger builds on `git push`
+- **Jester AI Chatbot** — Gemini-powered assistant for debugging pipelines, writing configs, and understanding build errors
+- **Infrastructure Dashboard** — real-time system metrics, deployment health analytics, and live topology mapping
+- **Settings Page** — user profile and configuration management
+- **Cloudflare Tunnel Support** — expose your local instance publicly with HTTPS
+- **Render Blueprint** — one-click cloud deployment via `render.yaml`
+
+---
 
 ## Architecture
 
 ```
 infraflow/
-├── client/          React + Vite + TailwindCSS (port 5173)
-└── server/          Express + MongoDB + JWT (port 5000)
+├── render.yaml                  Render Blueprint (IaC cloud deployment)
+├── ecosystem.config.cjs         PM2 production config
+├── package.json                 Workspace scripts (dev, build, pm2)
+│
+├── client/                      React + Vite + TailwindCSS (port 5173)
+│   └── src/
+│       ├── App.jsx              Routes & auth guards
+│       ├── config.js            API base URL config
+│       ├── context/
+│       │   └── AuthContext.jsx   Auth state provider
+│       ├── components/
+│       │   ├── Layout.jsx       App shell layout
+│       │   ├── Sidebar.jsx      Navigation sidebar
+│       │   ├── JesterAI.jsx     AI chatbot floating widget
+│       │   └── infrastructure/
+│       │       ├── InfraNodeCard.jsx
+│       │       └── StatusBadge.jsx
+│       └── pages/
+│           ├── LandingPage.jsx           Public landing page
+│           ├── AuthCallback.jsx          OAuth callback handler
+│           ├── Dashboard.jsx             Pipeline overview
+│           ├── NewPipeline.jsx           Create new pipeline
+│           ├── PipelineDetail.jsx        Pipeline config & builds
+│           ├── BuildView.jsx             Live build log viewer
+│           ├── Settings.jsx              User settings
+│           └── InfrastructureDashboard.jsx  Metrics & topology
+│
+└── server/                      Express + MongoDB + JWT (port 5000)
+    ├── index.js                 Entry point, route mounting
+    ├── corsAllowlist.js         Dynamic CORS origin handling
     ├── routes/
-    │   ├── auth.js           GitHub OAuth
-    │   ├── pipelines.js      CRUD + run + webhook
-    │   ├── builds.js         Build log queries
-    │   ├── stream.js         SSE real-time log streaming
-    │   └── pipelineRoutes.js Jenkins API trigger
-    ├── controllers/
-    │   └── pipelineController.js
+    │   ├── auth.js              GitHub OAuth flow
+    │   ├── pipelines.js         CRUD + run + webhook triggers
+    │   ├── builds.js            Build log queries
+    │   ├── stream.js            SSE real-time log streaming
+    │   ├── chat.js              Jester AI chatbot (Gemini)
+    │   └── infrastructure.js    Metrics, health, topology
+    ├── services/
+    │   ├── deploymentService.js Full-stack pipeline orchestrator
+    │   ├── renderService.js     Render cloud deployment
+    │   └── surgeService.js      Surge static site deployment
+    ├── infrastructure/
+    │   ├── metricsCollector.js  System metrics (CPU, RAM, disk)
+    │   ├── deploymentHealth.js  Deployment health analytics
+    │   └── topologyService.js   Live topology graph
+    ├── utils/
+    │   ├── execUtils.js         Command execution helpers
+    │   ├── gitUtils.js          Git repo & branch helpers
+    │   └── projectUtils.js      Project type detection
     ├── models/
     │   ├── User.js
     │   ├── Pipeline.js
@@ -21,6 +78,8 @@ infraflow/
     └── middleware/
         └── authMiddleware.js
 ```
+
+---
 
 ## Setup & Run
 
@@ -31,13 +90,13 @@ npm run install:all
 npm run dev
 ```
 
-This starts both backend and frontend together.
+This starts both backend and frontend together using `concurrently`.
 
 ### 1. Start the backend
 ```bash
 cd server
 npm install
-# Edit .env — update JENKINS_URL/USER/TOKEN if using Jenkins
+# Edit .env — see Environment Variables section below
 node index.js
 ```
 
@@ -52,16 +111,61 @@ Open http://localhost:5173
 
 ---
 
-## Real Pipeline Execution
+## Full-Stack Pipeline Execution
 
-`POST /pipelines/:id/run` and webhook runs now execute real commands:
+When a pipeline is triggered (`POST /pipelines/:id/run` or via webhook), InfraFlow runs a complete full-stack deployment:
 
-1. Clone target repository + branch (auto-fallback to default branch if configured branch is missing)
-2. Run `npm ci` or `npm install`
-3. Run `npm run build` if a build script exists
-4. Stream real stdout/stderr logs to the build view
+1. **Clone** — clones the target repository & branch (auto-fallback to default branch if configured branch is missing)
+2. **Detect** — auto-detects frontend and backend projects in the repo
+3. **Docker** — if a `Dockerfile` exists at the repo root, builds and optionally pushes the image to Docker Hub
+4. **Backend Deploy** — deploys backend to **Render** (creates or updates a Web Service via the Render API)
+5. **Frontend Build** — runs `npm install` + `npm run build` for the frontend project
+6. **Frontend Deploy** — deploys static assets (`dist/` or `build/`) to **Surge**
+7. **Auto-Link** — automatically sets `VITE_API_URL` in the frontend to the deployed backend URL
+8. **Post-Deploy** — provides GitHub OAuth configuration instructions if a backend was deployed
 
-Current scope: Node.js repos with `package.json` at repository root.
+All steps stream real-time logs to the build view via SSE.
+
+### Deployment Targets
+
+| Target | Service | Trigger |
+|--------|---------|---------|
+| **Backend** | [Render](https://render.com) | Auto-detected Node.js server project |
+| **Frontend** | [Surge](https://surge.sh) | Auto-detected frontend with `dist/` or `build/` output |
+| **Container** | [Docker Hub](https://hub.docker.com) | `Dockerfile` present at repo root |
+| **Local** | PM2 | `LOCAL_DEPLOY_ENABLED=true` (optional) |
+
+---
+
+## Jester AI — Built-in Chatbot
+
+InfraFlow includes **Jester**, a floating AI assistant powered by **Google Gemini 2.0 Flash**.
+
+- Helps debug failing pipelines
+- Explains build errors
+- Suggests CI/CD configuration improvements
+- Accessible from any page via the floating widget
+
+**Requires:** `GEMINI_API_KEY` in `server/.env` — get a free key from [Google AI Studio](https://aistudio.google.com).
+
+---
+
+## Infrastructure Monitoring Dashboard
+
+The `/infrastructure` page provides a real-time observability dashboard:
+
+- **System Metrics** — CPU usage, memory, disk I/O (powered by `systeminformation`)
+- **Metrics History** — time-series charts of system performance
+- **Deployment Health** — analytics on pipeline success rates and deployment status
+- **Topology Map** — live graph of infrastructure components and their relationships
+
+### API Endpoints
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/infrastructure/stats` | Current metrics + history |
+| GET | `/api/infrastructure/health` | Deployment health analytics |
+| GET | `/api/infrastructure/topology` | Live topology graph |
 
 ---
 
@@ -84,35 +188,47 @@ Useful scripts:
 ### Auth
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | /auth/github | Redirect to GitHub OAuth |
-| GET | /auth/github/callback | OAuth callback |
-| GET | /auth/me | Get logged-in user |
+| GET | `/auth/github` | Redirect to GitHub OAuth |
+| GET | `/auth/github/callback` | OAuth callback |
+| GET | `/auth/me` | Get logged-in user |
 
 ### Pipelines
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | /pipelines | List all (auth required) |
-| POST | /pipelines | Create new |
-| GET | /pipelines/:id | Get one |
-| DELETE | /pipelines/:id | Delete pipeline + builds |
-| POST | /pipelines/:id/run | Trigger a build |
-| POST | /pipelines/:id/webhook | GitHub push webhook |
+| GET | `/pipelines` | List all (auth required) |
+| POST | `/pipelines` | Create new |
+| GET | `/pipelines/:id` | Get one |
+| DELETE | `/pipelines/:id` | Delete pipeline + builds |
+| POST | `/pipelines/:id/run` | Trigger a build |
+| POST | `/pipelines/:id/webhook` | GitHub push webhook |
 
 ### Builds
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | /builds/pipeline/:pipelineId | All builds for a pipeline |
-| GET | /builds/:buildId | Single build + logs |
+| GET | `/builds/pipeline/:pipelineId` | All builds for a pipeline |
+| GET | `/builds/:buildId` | Single build + logs |
 
 ### Streaming
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | /stream/builds/:buildId?token=JWT | SSE live log stream |
+| GET | `/stream/builds/:buildId?token=JWT` | SSE live log stream |
 
-### Jenkins
+### Chat (Jester AI)
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | /api/run-pipeline | Trigger Jenkins job |
+| POST | `/api/chat` | Send message to Jester AI |
+
+### Infrastructure Monitoring
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/infrastructure/stats` | System metrics + history |
+| GET | `/api/infrastructure/health` | Deployment health analytics |
+| GET | `/api/infrastructure/topology` | Live topology graph |
+
+### Health
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/health` | Server health check (uptime) |
 
 ---
 
@@ -127,15 +243,20 @@ Useful scripts:
 
 ---
 
-## Jenkins Integration
+## Cloud Deployment (Render Blueprint)
 
-Edit `server/.env`:
-```
-JENKINS_URL=http://your-jenkins-ip:8080
-JENKINS_USER=your-username
-JENKINS_TOKEN=your-api-token
-JENKINS_JOB=YourJobName
-```
+InfraFlow includes a `render.yaml` for one-click deployment to [Render](https://render.com):
+
+- **infraflow-server** — Node.js Web Service (free tier)
+- **infraflow-client** — Static Site (Vite build)
+
+### Deploy to Render
+
+1. Push the repo to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connect your GitHub repo
+4. Render reads `render.yaml` and creates both services
+5. Set the `sync: false` env vars (MongoDB URI, GitHub OAuth keys, JWT secret) in the Render dashboard
 
 ---
 
@@ -164,7 +285,7 @@ GITHUB_CALLBACK_URL=https://YOUR-API.trycloudflare.com/auth/github/callback
 ALLOWED_ORIGINS=https://YOUR-UI.trycloudflare.com,http://localhost:5173
 ```
 
-Keep `PORT=5000` locally. The **API** tunnel forwards to `http://localhost:5000` (or `5001` if that’s what the server uses).
+Keep `PORT=5000` locally. The **API** tunnel forwards to `http://localhost:5000` (or `5001` if that's what the server uses).
 
 ### 2. `client/.env` — point the browser to your **API** tunnel
 
@@ -198,7 +319,7 @@ Copy each printed `https://….trycloudflare.com` URL:
 
 ### 3b. Open from anywhere
 
-On your phone: open **Tunnel B’s URL** (the UI). Login and API calls go to **Tunnel A** via `VITE_API_URL`.
+On your phone: open **Tunnel B's URL** (the UI). Login and API calls go to **Tunnel A** via `VITE_API_URL`.
 
 ### 4. GitHub OAuth App
 
@@ -215,26 +336,50 @@ If the server log says `Server running on port 5001` (because 5000 is busy), eit
 
 ## Environment Variables
 
+### Server (`server/.env`)
+
 ```env
+# Core
 PORT=5000
 MONGO_URI=mongodb+srv://...
+JWT_SECRET=...
+
+# GitHub OAuth
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-JWT_SECRET=...
-CLIENT_URL=http://localhost:5173
 GITHUB_CALLBACK_URL=http://localhost:5000/auth/github/callback
-SERVER_URL=http://localhost:5000
-# Public: comma-separated UI origins for CORS + SSE (tunnel + local dev)
-# ALLOWED_ORIGINS=https://your-ui.trycloudflare.com,http://localhost:5173
-JENKINS_URL=http://192.168.0.2:8080
-JENKINS_USER=Thejus
-JENKINS_TOKEN=...
-JENKINS_JOB=Infraflow
 
-# Optional: enable local deployment stage after successful build
+# URLs & CORS
+SERVER_URL=http://localhost:5000
+CLIENT_URL=http://localhost:5173
+# Comma-separated UI origins for CORS + SSE (tunnel + local dev)
+# ALLOWED_ORIGINS=https://your-ui.trycloudflare.com,http://localhost:5173
+
+# Jester AI Chatbot (get a free key from https://aistudio.google.com)
+GEMINI_API_KEY=...
+
+# Render Deployment (optional — enables cloud backend deployment)
+RENDER_API_KEY=...
+RENDER_OWNER_ID=...
+RENDER_PLAN=free
+
+# Surge Deployment (optional — enables static frontend deployment)
+SURGE_TOKEN=...
+
+# Docker Hub (optional — enables Docker image build & push)
+DOCKER_USERNAME=...
+DOCKER_PASSWORD=...
+
+# Local deployment (optional)
 LOCAL_DEPLOY_ENABLED=false
-# Optional base port for static app deployments (deterministic per pipeline)
 LOCAL_DEPLOY_PORT_BASE=4300
+```
+
+### Client (`client/.env`)
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_WEBHOOK_BASE_URL=http://localhost:5000
 ```
 
 ### Local deployment automation (optional)
@@ -247,3 +392,20 @@ Requires PM2 installed globally:
 ```bash
 npm i -g pm2
 ```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, TailwindCSS |
+| Backend | Express.js, Node.js |
+| Database | MongoDB (Mongoose) |
+| Auth | GitHub OAuth 2.0, JWT |
+| AI | Google Gemini 2.0 Flash (`@google/genai`) |
+| Monitoring | `systeminformation` |
+| Deployment | Render API, Surge CLI, Docker |
+| Real-time | Server-Sent Events (SSE) |
+| Process Manager | PM2 |
+| Tunneling | Cloudflare Tunnel |
